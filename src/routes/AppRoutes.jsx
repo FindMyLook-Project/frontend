@@ -1,15 +1,19 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-
-//temporery pages
-const UploadPage = () => <div className="p-10 text-center text-xl font-bold text-indigo-600">דף העלאת תמונה (כאן יהיה ה-Drag & Drop)</div>;
-const ResultsPage = () => <div className="p-10 text-center text-xl font-bold text-slate-700">דף תוצאות החיפוש (כאן יוצגו הפריטים מרנואר)</div>;
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Login from '../pages/Login';
+import SingUp from '../pages/SingUp';
+import Upload from '../pages/Upload';
+import Results from '../pages/Results';
 
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<UploadPage />} />
-      <Route path="/results" element={<ResultsPage />} />
+      <Route path="/" element={<Navigate to="/login" />} />
+      
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<SingUp />} />
+      <Route path="/upload" element={<Upload />} />
+      <Route path="/results" element={<Results />} />
     </Routes>
   );
 };
