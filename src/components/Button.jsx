@@ -1,11 +1,16 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const Button = ({ children, to, type = "button", className = "" }) => {
+const Button = ({ children, to, onClick, type = "button", className = "", disabled = false }) => {
   const navigate = useNavigate();
 
-  const handleClick = () => {
-    if (to) {
+  const handleClick = (e) => {
+    if (disabled) return;
+
+    if (onClick) {
+      onClick(e);
+    } 
+    else if (to) {
       navigate(to);
     }
   };
@@ -14,6 +19,7 @@ const Button = ({ children, to, type = "button", className = "" }) => {
     <button
       type={type}
       onClick={handleClick}
+      disabled={disabled}
       className={`
         bg-[#800020] hover:bg-[#600018] 
         text-white font-medium 
@@ -21,6 +27,7 @@ const Button = ({ children, to, type = "button", className = "" }) => {
         rounded-full 
         shadow-md transition-all duration-200
         active:scale-95
+        ${disabled ? 'opacity-50 cursor-not-allowed grayscale' : 'cursor-pointer'}
         ${className}
       `}
     >
