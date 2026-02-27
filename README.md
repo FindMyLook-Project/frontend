@@ -20,6 +20,7 @@ This command installs all required packages including Tailwind CSS 4, React Rout
 
 Bash
 npm install
+
 3. Run Development Server
 Bash
 npm run dev
