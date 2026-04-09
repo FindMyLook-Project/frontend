@@ -14,6 +14,7 @@ const Upload = () => {
   const [isLoading, setIsLoading] = useState(false);
   const imgRef = useRef(null);
   const navigate = useNavigate();
+  const [selectedCategory, setSelectedCategory] = useState('top');
   const [filters, setFilters] = useState({
     priceRange: 1000,
     storeType: { online: true, physical: true },
@@ -62,7 +63,7 @@ const Upload = () => {
 
   const addCropToList = () => {
     if (completedCrop && savedCrops.length < 3) {
-      setSavedCrops([...savedCrops, completedCrop]);
+      setSavedCrops([...savedCrops, { crop: completedCrop, category: selectedCategory }]);
       setCrop(undefined);
       alert(`Item ${savedCrops.length + 1} added successfully!`);
     } else if (savedCrops.length >= 3) {
@@ -79,16 +80,17 @@ const Upload = () => {
     setIsLoading(true);
 
     // הפיכת כל החיתוכים השמורים לתמונות Base64 עבור השרת
-    const croppedImagesBase64 = savedCrops.map(cropArea => 
-      getCroppedImg(imgRef.current, cropArea)
-    );
+    const croppedImagesBase64 = savedCrops.map(item => ({
+      image: getCroppedImg(imgRef.current, item.crop),
+      category: item.category
+    }));
 
     try {
       const response = await fetch(`${apiUrl}/api/search/visual-search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          images: croppedImagesBase64,
+          items: croppedImagesBase64,
           filters: filters
         }),
       });
@@ -217,7 +219,7 @@ const Upload = () => {
             </div>
 
             {/* Action Bar */}
-            <div className="mt-8 w-full max-w-md bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col items-center">
+            <div className="mt-8 w-full max-w-2xl bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col items-center">
               <div className="flex items-center gap-3 mb-6">
                 <span className="text-xs font-black uppercase tracking-widest text-gray-400">Items Selected:</span>
                 <div className="flex gap-2">
@@ -233,23 +235,35 @@ const Upload = () => {
                 </div>
               </div>
 
-              <div className="flex flex-wrap justify-center gap-3">
+              {/* הכפתורים והבחירה */}
+              <div className="flex flex-wrap justify-center items-center gap-4 w-full">
                 <Button onClick={resetAll} className="bg-gray-400 hover:bg-gray-500 px-6 py-2 text-sm">
                   Reset
                 </Button>
                 
-                <Button 
-                  onClick={addCropToList} 
-                  className="px-6 py-2 text-sm"
-                  disabled={!completedCrop || isLoading}
-                >
-                  + Add Item
-                </Button>
+                <div className="flex items-center gap-2 border-2 border-gray-200 rounded-lg pr-1 bg-white">
+                  <select 
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="px-3 py-2 text-sm bg-transparent outline-none text-gray-700 font-medium cursor-pointer"
+                  >
+                    <option value="top">Top (Shirt/Jacket)</option>
+                    <option value="bottom">Bottom (Pants/Skirt)</option>
+                    <option value="shoes">Shoes</option>
+                  </select>
+                  <Button 
+                    onClick={addCropToList} 
+                    className="px-6 py-1.5 text-sm h-full rounded-md"
+                    disabled={!completedCrop || isLoading}
+                  >
+                    + Add
+                  </Button>
+                </div>
 
                 <Button 
                   onClick={handleSearch} 
                   disabled={savedCrops.length === 0 || isLoading}
-                  className={`${savedCrops.length === 0 ? 'opacity-50 grayscale' : ''} px-10 py-2 text-sm shadow-lg bg-[#800020] text-white font-bold`}
+                  className={`${savedCrops.length === 0 ? 'opacity-50 grayscale' : ''} px-10 py-2 text-sm shadow-lg bg-[#800020] text-white font-bold ml-auto`}
                 >
                   {isLoading ? (
                     <div className="flex items-center gap-2">
