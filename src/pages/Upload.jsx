@@ -95,7 +95,7 @@ const Upload = () => {
 
       const data = await response.json();
       if (data.success) {
-        navigate('/results', { state: { searchResults: data.data } });
+        navigate('/results', { state: { searchResults: data.data, originalItems: croppedImagesBase64} });
       } else {
         alert("Search failed: " + data.error);
       }
