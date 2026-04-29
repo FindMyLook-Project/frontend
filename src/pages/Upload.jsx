@@ -23,7 +23,6 @@ const Upload = () => {
 
   const availableStores = ["ZARA", "H&M", "ASOS", "Terminal X", "Castro"];
 
-  // פונקציה שהופכת חיתוך (Crop) לתמונת Base64 ממשית
   const getCroppedImg = (image, crop) => {
     const canvas = document.createElement('canvas');
     const scaleX = image.naturalWidth / image.width;
@@ -79,7 +78,6 @@ const Upload = () => {
 
     setIsLoading(true);
 
-    // הפיכת כל החיתוכים השמורים לתמונות Base64 עבור השרת
     const croppedImagesBase64 = savedCrops.map(item => ({
       image: getCroppedImg(imgRef.current, item.crop),
       category: item.category
@@ -249,6 +247,8 @@ const Upload = () => {
                   >
                     <option value="top">Top (Shirt/Jacket)</option>
                     <option value="bottom">Bottom (Pants/Skirt)</option>
+                    <option value="skirt">Skirt</option> 
+                    <option value="dress">Dress</option> 
                     <option value="shoes">Shoes</option>
                   </select>
                   <Button 
