@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
@@ -15,13 +15,29 @@ const Upload = () => {
   const imgRef = useRef(null);
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('top');
+  
+  const [availableStores, setAvailableStores] = useState([]);
+
   const [filters, setFilters] = useState({
     priceRange: 1000,
     storeType: { online: true, physical: true },
     preferredStores: []
   });
 
-  const availableStores = ["ZARA", "H&M", "ASOS", "Terminal X", "Castro"];
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/api/search/stores`);
+        const data = await response.json();
+        if (data.success) {
+          setAvailableStores(data.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch stores from DB:", error);
+      }
+    };
+    fetchStores();
+  }, []);
 
   const getCroppedImg = (image, crop) => {
     const canvas = document.createElement('canvas');
@@ -122,7 +138,6 @@ const Upload = () => {
       </div>
 
       {!imgSrc ? (
-        /* Dropzone area */
         <div 
           {...getRootProps()} 
           className={`w-full max-w-xl p-20 border-4 border-dashed rounded-3xl cursor-pointer transition-all
@@ -135,10 +150,8 @@ const Upload = () => {
           </div>
         </div>
       ) : (
-        /* Main Workspace */
         <div className="flex flex-col lg:flex-row gap-8 w-full max-w-6xl animate-fadeIn">
           
-          {/* Sidebar: Filters */}
           <div className="w-full lg:w-80 bg-white p-6 rounded-2xl shadow-lg border border-gray-100 self-start">
             <h2 className="text-xl font-bold text-[#800020] mb-6 border-b pb-2">Personalize</h2>
 
@@ -179,27 +192,30 @@ const Upload = () => {
 
             <div className="mb-2">
               <label className="block text-sm font-bold text-gray-700 mb-3">Preferred Stores</label>
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar text-left">
-                {availableStores.map((store) => (
-                  <label key={store} className="flex items-center gap-3 cursor-pointer group">
-                    <input 
-                      type="checkbox"
-                      className="w-4 h-4 rounded border-gray-300 text-[#800020]"
-                      onChange={(e) => {
-                        const updated = e.target.checked 
-                          ? [...filters.preferredStores, store]
-                          : filters.preferredStores.filter(s => s !== store);
-                        setFilters({...filters, preferredStores: updated});
-                      }}
-                    />
-                    <span className="text-sm text-gray-600 group-hover:text-[#800020] transition-colors">{store}</span>
-                  </label>
-                ))}
-              </div>
+              {availableStores.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar text-left">
+                  {availableStores.map((store) => (
+                    <label key={store.key} className="flex items-center gap-3 cursor-pointer group">
+                      <input 
+                        type="checkbox"
+                        className="w-4 h-4 rounded border-gray-300 text-[#800020]"
+                        onChange={(e) => {
+                          const updated = e.target.checked 
+                            ? [...filters.preferredStores, store.key]
+                            : filters.preferredStores.filter(s => s !== store.key);
+                          setFilters({...filters, preferredStores: updated});
+                        }}
+                      />
+                      <span className="text-sm text-gray-600 group-hover:text-[#800020] transition-colors">{store.name}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-gray-400 italic">Loading stores...</div>
+              )}
             </div>
           </div>
 
-          {/* Main Cropper Area */}
           <div className="flex-1 flex flex-col items-center">
             <div className="bg-white p-4 rounded-2xl shadow-2xl border border-gray-100 w-full flex justify-center overflow-hidden">
               <ReactCrop
@@ -216,7 +232,6 @@ const Upload = () => {
               </ReactCrop>
             </div>
 
-            {/* Action Bar */}
             <div className="mt-8 w-full max-w-2xl bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col items-center">
               <div className="flex items-center gap-3 mb-6">
                 <span className="text-xs font-black uppercase tracking-widest text-gray-400">Items Selected:</span>
@@ -233,7 +248,6 @@ const Upload = () => {
                 </div>
               </div>
 
-              {/* הכפתורים והבחירה */}
               <div className="flex flex-wrap justify-center items-center gap-4 w-full">
                 <Button onClick={resetAll} className="bg-gray-400 hover:bg-gray-500 px-6 py-2 text-sm">
                   Reset
