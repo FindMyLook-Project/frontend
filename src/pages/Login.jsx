@@ -7,11 +7,21 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    //**********add backend logic -confirm email + password**********
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("Logging in with:", email, password);
-    navigate('/upload'); 
+    try {
+      const res = await fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) throw new Error('Login failed');
+      const { token } = await res.json();
+      localStorage.setItem('token', token);
+      navigate('/upload');
+    } catch {
+      alert('Login failed. Please check your credentials.');
+    }
   };
 
   return (
@@ -46,7 +56,7 @@ const Login = () => {
           </div>
 
           <div className="flex justify-center mt-6  ">
-            <Button to="/upload" className="cursor-pointer" > Login</Button>
+            <Button type="submit" className="cursor-pointer">Login</Button>
           </div>
         </form>
 
