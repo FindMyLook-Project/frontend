@@ -19,11 +19,27 @@ const SingUp = () => {
     });
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
-    //send the parameters to the server and create an account 
-    console.log("Signing up with:", formData);
-    navigate('/login'); // after the account was created, move to the login page
+    try {
+      const res = await fetch('http://localhost:3000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+
+      alert('User created successfully! Redirecting to login...');
+      navigate('/login');
+
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (

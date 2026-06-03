@@ -7,11 +7,33 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
-    //**********add backend logic -confirm email + password**********
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log("Logging in with:", email, password);
-    navigate('/upload'); 
+    try {
+      const res = await fetch('http://localhost:3000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      // קוראים את ה-JSON מהשרת (בין אם זו הצלחה ובין אם שגיאה)
+      const data = await res.json();
+
+      // אם השרת החזיר סטטוס שגיאה (400, 401, 409 וכו')
+      if (!res.ok) {
+        // זורקים שגיאה עם הטקסט המדויק שהשרת שלח בשדה error
+        throw new Error(data.error || 'Login failed. Please check your credentials.');
+      }
+
+      // במקרה של הצלחה (סטטוס 200)
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user)); // שומרים את פרטי המשתמש לשלב הבא
+      
+      navigate('/upload');
+    } catch (err) {
+      // כאן המשתנה err.message יכיל בדיוק את ה-error מהבקאנד
+      alert(err.message);
+    }
   };
 
   return (
@@ -45,8 +67,8 @@ const Login = () => {
             />
           </div>
 
-          <div className="flex justify-center mt-6  ">
-            <Button to="/upload" className="cursor-pointer" > Login</Button>
+          <div className="flex justify-center mt-6">
+            <Button type="submit" className="cursor-pointer">Login</Button>
           </div>
         </form>
 
@@ -54,7 +76,7 @@ const Login = () => {
           <span className="text-gray-600">Don't have an account? </span>
           <button 
             onClick={() => navigate('/signup')} 
-            className="text-[#800020] font-bold hover:underline cursor-pointer hover:text-[#6 00018] transition-colors"
+            className="text-[#800020] font-bold hover:underline cursor-pointer hover:text-[#600018] transition-colors"
           >
             Sign up
           </button>
