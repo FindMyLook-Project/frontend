@@ -27,10 +27,18 @@ const SingUp = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
-      if (!res.ok) throw new Error('Registration failed');
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Registration failed');
+      }
+
+      alert('User created successfully! Redirecting to login...');
       navigate('/login');
-    } catch {
-      alert('Sign up failed. Please try again.');
+
+    } catch (err) {
+      alert(err.message);
     }
   };
 
