@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import Button from '../components/Button'; 
+import Navbar from '../components/Navbar';
 
 const Results = () => {
   const location = useLocation();
@@ -9,95 +9,124 @@ const Results = () => {
   const searchResults = location.state?.searchResults || [];
   const originalItems = location.state?.originalItems || [];
 
-  const formatCategoryName = (category) => {
-    if (!category) return "Item";
+  const formatCategory = (category) => {
+    if (!category) return 'Item';
     return category.charAt(0).toUpperCase() + category.slice(1);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        
-        <div className="flex justify-between items-center mb-10">
-          <h1 className="text-4xl font-extrabold text-[#800020]">Search Results</h1>
-          <Button onClick={() => navigate('/upload')} className="bg-gray-500 hover:bg-gray-600 px-6 py-2 text-white rounded-full font-medium">
+    <div className="min-h-screen" style={{ backgroundColor: '#f8f6f3' }}>
+      <Navbar />
+
+      <div className="max-w-7xl mx-auto px-6 py-12">
+
+        {/* Header */}
+        <div className="flex justify-between items-end mb-12 pb-6 border-b border-[#e5e0d8]">
+          <div>
+            <p className="text-[10px] uppercase tracking-[3px] text-gray-400 mb-2">Your search</p>
+            <h1
+              className="text-4xl text-[#1a1a1a]"
+              style={{ fontFamily: "'Playfair Display', serif" }}
+            >
+              Search Results
+            </h1>
+          </div>
+          <button
+            onClick={() => navigate('/upload')}
+            className="text-[11px] uppercase tracking-[2px] text-[#1a1a1a] border border-[#e5e0d8] px-6 py-3 hover:border-[#1a1a1a] transition-colors cursor-pointer"
+          >
             New Search
-          </Button>
+          </button>
         </div>
 
+        {/* Result groups */}
         {searchResults.map((searchData, index) => {
           const originalItem = originalItems[searchData.itemIndex];
           const products = searchData.results;
 
           return (
-            <div key={index} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-10 animate-fadeIn">
-              
-              <div className="flex items-center gap-6 mb-8 border-b border-gray-100 pb-6">
-                
-                <div className="w-20 h-20 bg-gray-50 rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden shrink-0 shadow-inner">
-                  {originalItem?.image ? (
+            <div key={index} className="mb-16">
+
+              {/* Section label */}
+              <div className="flex items-center gap-4 mb-6">
+                {originalItem?.image && (
+                  <div className="w-12 h-12 border border-[#e5e0d8] overflow-hidden shrink-0">
                     <img
                       src={originalItem.image}
-                      alt="Your crop"
+                      alt="Your selection"
                       className="w-full h-full object-cover"
                     />
-                  ) : (
-                    <span className="text-3xl">👗</span> 
-                  )}
-                </div>
-
+                  </div>
+                )}
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    {originalItem ? `${formatCategoryName(originalItem.category)} Matches` : 'Top Matches Found'}
-                  </h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Showing the best results based on your selection
+                  <p className="text-[9px] uppercase tracking-[3px] text-[#8B1A2B]">
+                    {formatCategory(originalItem?.category)}
+                  </p>
+                  <p className="text-sm text-[#1a1a1a] mt-0.5">
+                    {products.length} match{products.length !== 1 ? 'es' : ''} found
                   </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                {products.length > 0 ? (
-                  products.map((product, pIndex) => (
-                    <div key={pIndex} className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col group">
-                      
-                      <div className="relative aspect-[3/4] bg-gray-100 overflow-hidden">
+              {/* Product grid */}
+              {products.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {products.map((product, pIndex) => (
+                    <a
+                      key={pIndex}
+                      href={product.productUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group block border border-[#e5e0d8] overflow-hidden bg-white hover:border-[#1a1a1a] transition-colors"
+                    >
+                      <div className="aspect-[3/4] overflow-hidden relative" style={{ backgroundColor: '#f0ece6' }}>
                         <img
-                          src={product.images?.[0]?.url || product.images?.[0] || 'placeholder.jpg'}
+                          src={product.images?.[0]?.url || product.images?.[0]}
                           alt={product.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => { e.target.style.display = 'none'; }}
                         />
-                        <div className="absolute bottom-2 left-2 bg-[#800020] text-white text-xs font-bold px-2 py-1 rounded">
-                          {Math.round(product.searchScore * 100)}% Match
-                        </div>
-                        <div className="absolute top-2 right-2 bg-white text-gray-800 text-xs font-bold px-2 py-1 rounded shadow-sm">
-                          ₪{product.price}
+                        <div className="absolute top-2 left-2 bg-white border border-[#e5e0d8] px-2 py-0.5">
+                          <span className="text-[9px] uppercase tracking-[1px] text-[#1a1a1a]">
+                            {Math.round(product.searchScore * 100)}%
+                          </span>
                         </div>
                       </div>
 
-                      <div className="p-3 flex flex-col flex-1">
-                        <h3 className="text-sm font-bold text-gray-800 line-clamp-1 text-right" dir="rtl">{product.title}</h3>
-                        <p className="text-xs text-gray-500 mb-3 text-right" dir="rtl">{product.storeName || product.brand}</p>
-                        <a
-                          href={product.productUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-auto block text-center w-full border border-[#800020] text-[#800020] hover:bg-[#800020] hover:text-white transition-colors py-1.5 rounded-full text-xs font-bold"
-                        >
-                          Buy Product
-                        </a>
+                      <div className="p-3 bg-white">
+                        <p className="text-[9px] uppercase tracking-[2px] text-[#8B1A2B] mb-1">
+                          {product.storeName || product.brand}
+                        </p>
+                        <p className="text-xs text-[#1a1a1a] line-clamp-2 leading-snug text-right" dir="rtl">
+                          {product.title}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-2">₪{product.price}</p>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full py-10 text-center text-gray-500 font-medium">
-                    No exact matching products found for this item. Try adjusting the filters.
-                  </div>
-                )}
-              </div>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div className="border border-[#e5e0d8] bg-white py-12 text-center">
+                  <p className="text-xs uppercase tracking-[2px] text-gray-400">
+                    No matches found — try adjusting your filters
+                  </p>
+                </div>
+              )}
             </div>
           );
         })}
+
+        {searchResults.length === 0 && (
+          <div className="text-center py-24">
+            <p className="text-xs uppercase tracking-[3px] text-gray-400 mb-6">No results</p>
+            <button
+              onClick={() => navigate('/upload')}
+              className="bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2.5px] py-3 px-10 hover:bg-[#333] transition-colors cursor-pointer"
+            >
+              Start a new search
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
