@@ -6,13 +6,8 @@ const Button = ({ children, to, onClick, type = "button", className = "", disabl
 
   const handleClick = (e) => {
     if (disabled) return;
-
-    if (onClick) {
-      onClick(e);
-    } 
-    else if (to) {
-      navigate(to);
-    }
+    if (onClick) onClick(e);
+    else if (to) navigate(to);
   };
 
   return (
@@ -21,13 +16,12 @@ const Button = ({ children, to, onClick, type = "button", className = "", disabl
       onClick={handleClick}
       disabled={disabled}
       className={`
-        bg-[#800020] hover:bg-[#600018] 
-        text-white font-medium 
-        py-2 px-8 
-        rounded-full 
-        shadow-md transition-all duration-200
-        active:scale-95
-        ${disabled ? 'opacity-50 cursor-not-allowed grayscale' : 'cursor-pointer'}
+        bg-[#1a1a1a] hover:bg-[#333]
+        text-white text-[11px] font-medium
+        py-3 px-8
+        uppercase tracking-[2.5px]
+        transition-colors duration-200
+        ${disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}
         ${className}
       `}
     >

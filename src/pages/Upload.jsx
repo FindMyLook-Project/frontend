@@ -1,11 +1,17 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import Button from '../components/Button';
 import Navbar from '../components/Navbar';
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 import { useNavigate } from 'react-router-dom';
+
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+const STEPS = [
+  { num: '01', label: 'Upload' },
+  { num: '02', label: 'Select item' },
+  { num: '03', label: 'Find it' },
+];
 
 const Upload = () => {
   const [imgSrc, setImgSrc] = useState('');
@@ -16,28 +22,27 @@ const Upload = () => {
   const imgRef = useRef(null);
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('top');
-  
   const [availableStores, setAvailableStores] = useState([]);
+  const [bgImages, setBgImages] = useState([]);
 
   const [filters, setFilters] = useState({
     priceRange: 1000,
     storeType: { online: true, physical: true },
-    preferredStores: []
+    preferredStores: [],
   });
 
   useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        const response = await fetch(`${apiUrl}/api/search/stores`);
-        const data = await response.json();
-        if (data.success) {
-          setAvailableStores(data.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch stores from DB:", error);
-      }
-    };
-    fetchStores();
+    fetch(`${apiUrl}/api/search/stores`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setAvailableStores(d.data); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch(`${apiUrl}/api/search/random?limit=20`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setBgImages(d.data.filter(p => p.images?.[0]?.url)); })
+      .catch(() => {});
   }, []);
 
   const getCroppedImg = (image, crop) => {
@@ -47,19 +52,7 @@ const Upload = () => {
     canvas.width = crop.width;
     canvas.height = crop.height;
     const ctx = canvas.getContext('2d');
-
-    ctx.drawImage(
-      image,
-      crop.x * scaleX,
-      crop.y * scaleY,
-      crop.width * scaleX,
-      crop.height * scaleY,
-      0,
-      0,
-      crop.width,
-      crop.height
-    );
-
+    ctx.drawImage(image, crop.x * scaleX, crop.y * scaleY, crop.width * scaleX, crop.height * scaleY, 0, 0, crop.width, crop.height);
     return canvas.toDataURL('image/jpeg');
   };
 
@@ -74,51 +67,42 @@ const Upload = () => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: onSelectFile,
     accept: { 'image/*': [] },
-    multiple: false
+    multiple: false,
   });
 
   const addCropToList = () => {
     if (completedCrop && savedCrops.length < 3) {
       setSavedCrops([...savedCrops, { crop: completedCrop, category: selectedCategory }]);
       setCrop(undefined);
-      alert(`Item ${savedCrops.length + 1} added successfully!`);
     } else if (savedCrops.length >= 3) {
-      alert("Maximum 3 items allowed per search.");
+      alert('Maximum 3 items allowed per search.');
     }
   };
 
   const handleSearch = async () => {
     if (savedCrops.length === 0) {
-      alert("Please select at least one item to search.");
+      alert('Please select at least one item to search.');
       return;
     }
-
     setIsLoading(true);
-
     const croppedImagesBase64 = savedCrops.map(item => ({
       image: getCroppedImg(imgRef.current, item.crop),
-      category: item.category
+      category: item.category,
     }));
-
     try {
       const response = await fetch(`${apiUrl}/api/search/visual-search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          items: croppedImagesBase64,
-          filters: filters
-        }),
+        body: JSON.stringify({ items: croppedImagesBase64, filters }),
       });
-
       const data = await response.json();
       if (data.success) {
-        navigate('/results', { state: { searchResults: data.data, originalItems: croppedImagesBase64} });
+        navigate('/results', { state: { searchResults: data.data, originalItems: croppedImagesBase64 } });
       } else {
-        alert("Search failed: " + data.error);
+        alert('Search failed: ' + data.error);
       }
     } catch (error) {
-      console.error("Connection error:", error);
-      alert("Make sure Backend is running.");
+      alert('Make sure the backend is running.');
     } finally {
       setIsLoading(false);
     }
@@ -130,176 +114,270 @@ const Upload = () => {
     setCrop(undefined);
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* 1. Navbar stays at the very top, full width */}
-      <Navbar />
+  const activeStep = imgSrc ? 1 : 0;
 
-      {/* 2. Main wrapper container for contents with layout paddings */}
-      <div className="flex-1 w-full flex flex-col items-center py-12 px-4">
-        
-        {/* Header Intro Subtitle */}
-        <div className="max-w-3xl w-full text-center mb-12">
-          <p className="text-gray-600 italic">Step 1: Upload. Step 2: Personalize & Select. Step 3: Find!</p>
+  /* ─── Pre-upload view ─────────────────────────────────────── */
+  if (!imgSrc) {
+    return (
+      <div style={{ backgroundColor: '#f8f6f3' }}>
+        <Navbar />
+
+        {/* Hero: 3-column editorial grid */}
+        <div className="grid grid-cols-3" style={{ height: '58vh' }}>
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="overflow-hidden" style={{ backgroundColor: '#e8e3dc' }}>
+              {bgImages[i] && (
+                <img
+                  src={bgImages[i].images[0].url}
+                  alt=""
+                  className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-700"
+                />
+              )}
+            </div>
+          ))}
         </div>
 
-        {!imgSrc ? (
-          <div 
-            {...getRootProps()} 
-            className={`w-full max-w-xl p-20 border-4 border-dashed rounded-3xl cursor-pointer transition-all
-              ${isDragActive ? 'border-[#800020] bg-red-50' : 'border-gray-300 bg-white hover:border-[#800020]'}`}
+        {/* Upload section */}
+        <div className="max-w-xl mx-auto px-6 py-16 text-center">
+          <p className="text-[10px] uppercase tracking-[3px] text-gray-400 mb-4">Upload your look</p>
+          <h2
+            className="text-4xl md:text-5xl text-[#1a1a1a] mb-14 leading-tight"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            Find what you're<br />wearing
+          </h2>
+
+          {/* Steps */}
+          <div className="grid grid-cols-3 border border-[#e5e0d8] mb-10">
+            {STEPS.map((step, i) => (
+              <div
+                key={i}
+                className={`px-4 py-4 text-left ${i < 2 ? 'border-r border-[#e5e0d8]' : ''}`}
+              >
+                <p className={`text-xs font-semibold ${i === activeStep ? 'text-[#8B1A2B]' : 'text-gray-300'}`}>
+                  {step.num}
+                </p>
+                <p className={`text-sm mt-0.5 ${i === activeStep ? 'text-[#1a1a1a]' : 'text-gray-300'}`}>
+                  {step.label}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Drop zone */}
+          <div
+            {...getRootProps()}
+            className={`w-full py-16 border border-[#e5e0d8] bg-white cursor-pointer transition-colors ${
+              isDragActive ? 'border-[#1a1a1a] bg-[#f8f6f3]' : 'hover:border-[#1a1a1a]'
+            }`}
           >
             <input {...getInputProps()} />
-            <div className="flex flex-col items-center">
-              <span className="text-6xl mb-4">🖼️</span>
-              <p className="text-xl font-medium text-gray-700">Drop your outfit photo here</p>
+            <svg className="w-8 h-8 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <p className="text-sm text-gray-500">Drop your outfit photo here</p>
+            <p className="text-xs text-gray-300 mt-1">or click to browse</p>
+          </div>
+        </div>
+
+      </div>
+    );
+  }
+
+  /* ─── Post-upload / crop view ─────────────────────────────── */
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: '#f8f6f3' }}>
+      <Navbar />
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+
+        {/* Steps — step 02 active */}
+        <div className="grid grid-cols-3 border border-[#e5e0d8] mb-8 max-w-xl">
+          {STEPS.map((step, i) => (
+            <div
+              key={i}
+              className={`px-4 py-3 text-left ${i < 2 ? 'border-r border-[#e5e0d8]' : ''}`}
+            >
+              <p className={`text-xs font-semibold ${i === 1 ? 'text-[#8B1A2B]' : 'text-gray-300'}`}>
+                {step.num}
+              </p>
+              <p className={`text-sm mt-0.5 ${i === 1 ? 'text-[#1a1a1a]' : 'text-gray-300'}`}>
+                {step.label}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-8">
+
+          {/* Left: Personalize filters */}
+          <div className="w-full lg:w-72 bg-white border border-[#e5e0d8] p-6 self-start shrink-0">
+            <p className="text-[10px] uppercase tracking-[3px] text-gray-400 mb-6 pb-4 border-b border-[#e5e0d8]">
+              Personalize
+            </p>
+
+            <div className="mb-7">
+              <label className="block text-[10px] uppercase tracking-[2px] text-gray-400 mb-3">
+                Max price:{' '}
+                <span className="text-[#1a1a1a] font-medium">₪{filters.priceRange}</span>
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="2000"
+                step="50"
+                value={filters.priceRange}
+                onChange={(e) => setFilters({ ...filters, priceRange: e.target.value })}
+                className="w-full h-px bg-[#e5e0d8] appearance-none cursor-pointer accent-[#1a1a1a]"
+              />
+            </div>
+
+            <div className="mb-7">
+              <label className="block text-[10px] uppercase tracking-[2px] text-gray-400 mb-3">
+                Store type
+              </label>
+              <div className="flex gap-4">
+                {['online', 'physical'].map((type) => (
+                  <label key={type} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={filters.storeType[type]}
+                      onChange={() =>
+                        setFilters({
+                          ...filters,
+                          storeType: { ...filters.storeType, [type]: !filters.storeType[type] },
+                        })
+                      }
+                      className="w-3 h-3 border border-[#e5e0d8] accent-[#1a1a1a]"
+                    />
+                    <span className="capitalize text-xs text-gray-500">{type}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] uppercase tracking-[2px] text-gray-400 mb-3">
+                Preferred stores
+              </label>
+              {availableStores.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {availableStores.map((store) => (
+                    <label key={store.key} className="flex items-center gap-2 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        className="w-3 h-3 border border-[#e5e0d8] accent-[#1a1a1a]"
+                        onChange={(e) => {
+                          const updated = e.target.checked
+                            ? [...filters.preferredStores, store.key]
+                            : filters.preferredStores.filter((s) => s !== store.key);
+                          setFilters({ ...filters, preferredStores: updated });
+                        }}
+                      />
+                      <span className="text-xs text-gray-500 group-hover:text-[#1a1a1a] transition-colors">
+                        {store.name}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-300 italic">Loading stores...</p>
+              )}
             </div>
           </div>
-        ) : (
-          <div className="flex flex-col lg:flex-row gap-8 w-full max-w-6xl animate-fadeIn">
-            
-            <div className="w-full lg:w-80 bg-white p-6 rounded-2xl shadow-lg border border-gray-100 self-start">
-              <h2 className="text-xl font-bold text-[#800020] mb-6 border-b pb-2">Personalize</h2>
 
-              <div className="mb-8">
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Max Price: <span className="text-[#800020]">{filters.priceRange} ILS</span>
-                </label>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="2000" 
-                  step="50"
-                  value={filters.priceRange}
-                  onChange={(e) => setFilters({...filters, priceRange: e.target.value})}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#800020]"
+          {/* Right: image + controls */}
+          <div className="flex-1 flex flex-col">
+
+            {/* Crop area */}
+            <div className="bg-white border border-[#e5e0d8] w-full flex justify-center overflow-hidden p-4">
+              <ReactCrop
+                crop={crop}
+                onChange={(c) => setCrop(c)}
+                onComplete={(c) => setCompletedCrop(c)}
+              >
+                <img
+                  ref={imgRef}
+                  src={imgSrc}
+                  alt="Upload"
+                  className="max-h-[58vh]"
                 />
-              </div>
+              </ReactCrop>
+            </div>
 
-              <div className="mb-8">
-                <label className="block text-sm font-bold text-gray-700 mb-3">Store Type</label>
-                <div className="flex gap-4">
-                  {['online', 'physical'].map((type) => (
-                    <label key={type} className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={filters.storeType[type]}
-                        onChange={() => setFilters({
-                          ...filters, 
-                          storeType: {...filters.storeType, [type]: !filters.storeType[type]}
-                        })}
-                        className="w-4 h-4 rounded border-gray-300 text-[#800020]"
-                      />
-                      <span className="capitalize text-sm text-gray-600 font-medium">{type}</span>
-                    </label>
+            {/* Controls */}
+            <div className="mt-6 bg-white border border-[#e5e0d8] p-6">
+
+              {/* Item counter */}
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-[10px] uppercase tracking-[2px] text-gray-400">Items selected:</span>
+                <div className="flex gap-2">
+                  {[1, 2, 3].map((num) => (
+                    <div
+                      key={num}
+                      className={`w-7 h-7 flex items-center justify-center text-xs font-medium border transition-all duration-200 ${
+                        savedCrops.length >= num
+                          ? 'bg-[#1a1a1a] border-[#1a1a1a] text-white'
+                          : 'border-[#e5e0d8] text-gray-300'
+                      }`}
+                    >
+                      {num}
+                    </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mb-2">
-                <label className="block text-sm font-bold text-gray-700 mb-3">Preferred Stores</label>
-                {availableStores.length > 0 ? (
-                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar text-left">
-                    {availableStores.map((store) => (
-                      <label key={store.key} className="flex items-center gap-3 cursor-pointer group">
-                        <input 
-                          type="checkbox"
-                          className="w-4 h-4 rounded border-gray-300 text-[#800020]"
-                          onChange={(e) => {
-                            const updated = e.target.checked 
-                              ? [...filters.preferredStores, store.key]
-                              : filters.preferredStores.filter(s => s !== store.key);
-                            setFilters({...filters, preferredStores: updated});
-                          }}
-                        />
-                        <span className="text-sm text-gray-600 group-hover:text-[#800020] transition-colors">{store.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-xs text-gray-400 italic">Loading stores...</div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex-1 flex flex-col items-center">
-              <div className="bg-white p-4 rounded-2xl shadow-2xl border border-gray-100 w-full flex justify-center overflow-hidden">
-                <ReactCrop
-                  crop={crop}
-                  onChange={(c) => setCrop(c)}
-                  onComplete={(c) => setCompletedCrop(c)}
+              {/* Buttons row */}
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={resetAll}
+                  className="text-[11px] uppercase tracking-[2px] text-gray-400 border border-[#e5e0d8] px-5 py-2.5 hover:border-[#1a1a1a] hover:text-[#1a1a1a] transition-colors cursor-pointer"
                 >
-                  <img 
-                    ref={imgRef}
-                    src={imgSrc} 
-                    alt="Upload" 
-                    className="max-h-[60vh] rounded-lg"
-                  />
-                </ReactCrop>
-              </div>
+                  Reset
+                </button>
 
-              <div className="mt-8 w-full max-w-2xl bg-white p-6 rounded-2xl shadow-md border border-gray-100 flex flex-col items-center">
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="text-xs font-black uppercase tracking-widest text-gray-400">Items Selected:</span>
-                  <div className="flex gap-2">
-                    {[1, 2, 3].map((num) => (
-                      <div 
-                        key={num}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 transition-all duration-300
-                          ${savedCrops.length >= num ? 'bg-[#800020] border-[#800020] text-white shadow-md' : 'border-gray-100 text-gray-200'}`}
-                      >
-                        {num}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap justify-center items-center gap-4 w-full">
-                  <Button onClick={resetAll} className="bg-gray-400 hover:bg-gray-500 px-6 py-2 text-sm">
-                    Reset
-                  </Button>
-                  
-                  <div className="flex items-center gap-2 border-2 border-gray-200 rounded-lg pr-1 bg-white">
-                    <select 
-                      value={selectedCategory}
-                      onChange={(e) => setSelectedCategory(e.target.value)}
-                      className="px-3 py-2 text-sm bg-transparent outline-none text-gray-700 font-medium cursor-pointer"
-                    >
-                      <option value="top">Top (Shirt/Jacket)</option>
-                      <option value="bottom">Bottom (Pants/Skirt)</option>
-                      <option value="skirt">Skirt</option> 
-                      <option value="dress">Dress</option> 
-                      <option value="shoes">Shoes</option>
-                    </select>
-                    <Button 
-                      onClick={addCropToList} 
-                      className="px-6 py-1.5 text-sm h-full rounded-md"
-                      disabled={!completedCrop || isLoading}
-                    >
-                      + Add
-                    </Button>
-                  </div>
-
-                  <Button 
-                    onClick={handleSearch} 
-                    disabled={savedCrops.length === 0 || isLoading}
-                    className={`${savedCrops.length === 0 ? 'opacity-50 grayscale' : ''} px-10 py-2 text-sm shadow-lg bg-[#800020] text-white font-bold ml-auto`}
+                {/* Category + Add */}
+                <div className="flex border border-[#e5e0d8]">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="px-3 py-2.5 text-xs bg-transparent outline-none text-gray-600 cursor-pointer uppercase tracking-[1px]"
                   >
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Searching AI...
-                      </div>
-                    ) : (
-                      `Find My Look (${savedCrops.length})`
-                    )}
-                  </Button>
+                    <option value="top">Top</option>
+                    <option value="bottom">Bottom</option>
+                    <option value="skirt">Skirt</option>
+                    <option value="dress">Dress</option>
+                    <option value="shoes">Shoes</option>
+                  </select>
+                  <button
+                    onClick={addCropToList}
+                    disabled={!completedCrop || isLoading}
+                    className="px-5 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] hover:bg-[#333] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border-l border-[#333]"
+                  >
+                    + Add
+                  </button>
                 </div>
+
+                {/* Search */}
+                <button
+                  onClick={handleSearch}
+                  disabled={savedCrops.length === 0 || isLoading}
+                  className="ml-auto px-10 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] hover:bg-[#333] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                      Searching...
+                    </>
+                  ) : (
+                    `Find My Look (${savedCrops.length})`
+                  )}
+                </button>
               </div>
             </div>
-
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

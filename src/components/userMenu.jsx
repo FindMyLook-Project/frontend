@@ -31,20 +31,20 @@ const UserMenu = () => {
     <div className="relative inline-block text-left z-50">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 bg-white pl-4 pr-3 py-2 rounded-full shadow-sm hover:shadow-md border border-gray-200/80 transition-all duration-200 cursor-pointer group select-none"
+        className="flex items-center gap-2 cursor-pointer select-none group"
       >
-        <div className="w-7 h-7 rounded-full bg-[#800020] text-white flex items-center justify-center text-xs font-bold shadow-sm group-hover:scale-105 transition-transform">
+        <div className="w-7 h-7 bg-[#1a1a1a] text-white flex items-center justify-center text-xs font-medium">
           {initial}
         </div>
-        <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
-          {user.firstName ? `Hi, ${user.firstName}` : 'User'}
+        <span className="text-xs uppercase tracking-[1.5px] text-[#1a1a1a] group-hover:text-gray-500 transition-colors">
+          {user.firstName || 'Account'}
         </span>
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          fill="none" 
-          viewBox="0 0 24 24" 
-          strokeWidth={2} 
-          stroke="currentColor" 
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
           className={`w-3 h-3 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
@@ -53,35 +53,23 @@ const UserMenu = () => {
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 h-screen w-screen" onClick={() => setIsOpen(false)}></div>
-          
-          <div className="absolute right-0 mt-2.5 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-1.5 origin-top-right animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
-            <div className="px-4 py-3 bg-gray-50/60 border-b border-gray-100 text-left">
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Account</p>
-              <p className="text-sm font-bold text-gray-700 truncate mt-0.5">
+          <div className="fixed inset-0 h-screen w-screen" onClick={() => setIsOpen(false)} />
+
+          <div className="absolute right-0 mt-3 w-52 bg-white border border-[#e5e0d8] shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-[#e5e0d8]">
+              <p className="text-[9px] uppercase tracking-[2px] text-gray-400 mb-1">Signed in as</p>
+              <p className="text-sm font-medium text-[#1a1a1a] truncate">
                 {user.firstName} {user.lastName}
               </p>
-              <p className="text-xs text-gray-500 truncate mt-0.5">{user.email}</p>
+              <p className="text-xs text-gray-400 truncate mt-0.5">{user.email}</p>
             </div>
-            
-            <div className="p-1">
-              <button
-                onClick={handleLogout}
-                className="w-full text-left px-3 py-2.5 text-sm text-red-600 hover:bg-red-50/80 rounded-xl flex items-center justify-between transition-all duration-150 font-semibold cursor-pointer group"
-              >
-                <span className="group-hover:translate-x-0.5 transition-transform">Log Out</span>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  strokeWidth={2} 
-                  stroke="currentColor" 
-                  className="w-4 h-4 text-red-500/80 group-hover:translate-x-0.5 transition-transform"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M12 9l-3 3m0 0 3 3m-3-3h12.75" />
-                </svg>
-              </button>
-            </div>
+
+            <button
+              onClick={handleLogout}
+              className="w-full text-left px-4 py-3 text-xs uppercase tracking-[1.5px] text-gray-600 hover:bg-[#f8f6f3] hover:text-[#1a1a1a] transition-colors cursor-pointer"
+            >
+              Sign Out
+            </button>
           </div>
         </>
       )}
