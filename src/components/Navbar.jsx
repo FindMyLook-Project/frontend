@@ -10,7 +10,7 @@ const Navbar = () => {
       <div className="flex-1" />
 
       <h1
-        className="text-[#8B1A2B] text-sm uppercase select-none tracking-[4px]"
+        className="text-[#8B1A2B] text-4xl uppercase select-none tracking-[6px]"
         style={{ fontFamily: "'Playfair Display', serif" }}
       >
         FIND MY LOOK

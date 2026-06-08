@@ -86,11 +86,6 @@ const Results = () => {
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           onError={(e) => { e.target.style.display = 'none'; }}
                         />
-                        <div className="absolute top-2 left-2 bg-white border border-[#e5e0d8] px-2 py-0.5">
-                          <span className="text-[9px] uppercase tracking-[1px] text-[#1a1a1a]">
-                            {Math.round(product.searchScore * 100)}%
-                          </span>
-                        </div>
                       </div>
 
                       <div className="p-3 bg-white">

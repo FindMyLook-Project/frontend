@@ -21,7 +21,6 @@ const Upload = () => {
   const [isLoading, setIsLoading] = useState(false);
   const imgRef = useRef(null);
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState('top');
   const [availableStores, setAvailableStores] = useState([]);
   const [bgImages, setBgImages] = useState([]);
 
@@ -39,7 +38,7 @@ const Upload = () => {
   }, []);
 
   useEffect(() => {
-    fetch(`${apiUrl}/api/search/random?limit=20`)
+    fetch(`${apiUrl}/api/products/random?limit=20`)
       .then(r => r.json())
       .then(d => { if (d.success) setBgImages(d.data.filter(p => p.images?.[0]?.url)); })
       .catch(() => {});
@@ -72,7 +71,7 @@ const Upload = () => {
 
   const addCropToList = () => {
     if (completedCrop && savedCrops.length < 3) {
-      setSavedCrops([...savedCrops, { crop: completedCrop, category: selectedCategory }]);
+      setSavedCrops([...savedCrops, { crop: completedCrop }]);
       setCrop(undefined);
     } else if (savedCrops.length >= 3) {
       alert('Maximum 3 items allowed per search.');
@@ -122,15 +121,15 @@ const Upload = () => {
       <div style={{ backgroundColor: '#f8f6f3' }}>
         <Navbar />
 
-        {/* Hero: 3-column editorial grid */}
-        <div className="grid grid-cols-3" style={{ height: '58vh' }}>
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="overflow-hidden" style={{ backgroundColor: '#e8e3dc' }}>
+        {/* Hero: 5-column portrait grid */}
+        <div style={{ display: 'flex', width: '100%', margin: 0, padding: 0, alignItems: 'stretch' }}>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} style={{ flex: 1, aspectRatio: '2/3', overflow: 'hidden', backgroundColor: '#e8e3dc' }}>
               {bgImages[i] && (
                 <img
                   src={bgImages[i].images[0].url}
                   alt=""
-                  className="w-full h-full object-cover object-top hover:scale-105 transition-transform duration-700"
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top', display: 'block' }}
                 />
               )}
             </div>
@@ -141,11 +140,14 @@ const Upload = () => {
         <div className="max-w-xl mx-auto px-6 py-16 text-center">
           <p className="text-[10px] uppercase tracking-[3px] text-gray-400 mb-4">Upload your look</p>
           <h2
-            className="text-4xl md:text-5xl text-[#1a1a1a] mb-14 leading-tight"
+            className="text-4xl md:text-5xl text-[#1a1a1a] mb-4 leading-tight"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
             Find what you're<br />wearing
           </h2>
+          <p className="text-sm text-gray-400 mb-10">
+            Upload a photo and we'll find every item for you to shop
+          </p>
 
           {/* Steps */}
           <div className="grid grid-cols-3 border border-[#e5e0d8] mb-10">
@@ -337,27 +339,13 @@ const Upload = () => {
                   Reset
                 </button>
 
-                {/* Category + Add */}
-                <div className="flex border border-[#e5e0d8]">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="px-3 py-2.5 text-xs bg-transparent outline-none text-gray-600 cursor-pointer uppercase tracking-[1px]"
-                  >
-                    <option value="top">Top</option>
-                    <option value="bottom">Bottom</option>
-                    <option value="skirt">Skirt</option>
-                    <option value="dress">Dress</option>
-                    <option value="shoes">Shoes</option>
-                  </select>
-                  <button
-                    onClick={addCropToList}
-                    disabled={!completedCrop || isLoading}
-                    className="px-5 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] hover:bg-[#333] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border-l border-[#333]"
-                  >
-                    + Add
-                  </button>
-                </div>
+                <button
+                  onClick={addCropToList}
+                  disabled={!completedCrop || isLoading}
+                  className="px-5 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] hover:bg-[#333] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  + Add
+                </button>
 
                 {/* Search */}
                 <button

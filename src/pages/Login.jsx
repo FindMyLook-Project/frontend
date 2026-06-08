@@ -8,13 +8,13 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [sideImage, setSideImage] = useState(null);
+  const [stripImages, setStripImages] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`${apiUrl}/api/search/random?limit=3`)
+    fetch(`${apiUrl}/api/products/random?limit=20`)
       .then(r => r.json())
-      .then(d => { if (d.success && d.data.length > 0) setSideImage(d.data[0]); })
+      .then(d => { if (d.success) setStripImages(d.data.filter(p => p.images?.[0]?.url)); })
       .catch(() => {});
   }, []);
 
@@ -41,32 +41,35 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: '#f8f6f3' }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#f8f6f3' }}>
 
-      {/* Left: product image */}
-      <div className="hidden lg:block w-1/2 relative overflow-hidden" style={{ backgroundColor: '#e5e0d8' }}>
-        {sideImage && (
-          <img
-            src={sideImage.images[0].url}
-            alt="Fashion"
-            className="w-full h-full object-cover object-top"
-          />
-        )}
-        <div className="absolute bottom-10 left-10">
-          <p
-            className="text-white text-2xl leading-snug"
-            style={{ fontFamily: "'Playfair Display', serif", textShadow: '0 1px 6px rgba(0,0,0,0.4)' }}
-          >
-            Discover your<br />perfect look
-          </p>
+      {/* Scrolling image strip */}
+      {stripImages.length > 0 && (
+        <div style={{ overflow: 'hidden', flexShrink: 0 }}>
+          <div style={{
+            display: 'flex',
+            gap: '4px',
+            width: 'max-content',
+            animation: 'scroll-strip 40s linear infinite',
+          }}>
+            {[...stripImages, ...stripImages].map((product, i) => (
+              <div key={i} style={{ height: '180px', width: '135px', flexShrink: 0 }}>
+                <img
+                  src={product.images[0].url}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Right: form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-10 md:px-20 xl:px-28">
+      <div className="flex-1 flex items-center justify-center py-10">
+      <div className="w-full max-w-md flex flex-col px-6">
         <div className="mb-12">
           <span
-            className="text-[#8B1A2B] text-xs uppercase tracking-[4px]"
+            className="text-[#8B1A2B] text-4xl uppercase tracking-[6px]"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
             FIND MY LOOK
@@ -126,6 +129,7 @@ const Login = () => {
             Create an account
           </button>
         </p>
+      </div>
       </div>
     </div>
   );
