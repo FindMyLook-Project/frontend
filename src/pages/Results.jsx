@@ -2,6 +2,8 @@ import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 const Results = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -12,6 +14,49 @@ const Results = () => {
   const formatCategory = (category) => {
     if (!category) return 'Item';
     return category.charAt(0).toUpperCase() + category.slice(1);
+  };
+
+  const handleProductClick = async (product) => {
+    try {
+      const userStorage = localStorage.getItem('user'); 
+      
+      if (!userStorage) {
+        console.log("Guest user clicked - personalization tracking skipped.");
+        return; 
+      }
+
+      const loggedInUser = JSON.parse(userStorage);
+      const realUserId = loggedInUser._id || loggedInUser.id; 
+
+      if (!realUserId) {
+        console.error("❌ User object exists but missing ID.");
+        return;
+      }
+
+      const payload = {
+        userId: realUserId, 
+        eventType: 'click',
+        productId: product._id, 
+        metadata: {
+          price: product.price,
+          store: product.storeName || product.brand,
+          color: product.colors?.[0] || 'other'
+        }
+      };
+
+      // 4. שולחים לבקאנד
+      await fetch(`${apiUrl}/api/profile/track`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      console.log(`✅ Click successfully tracked for user: ${loggedInUser.email || realUserId}`);
+    } catch (error) {
+      console.error("❌ Failed to track click:", error);
+    }
   };
 
   return (
@@ -77,9 +122,10 @@ const Results = () => {
                       href={product.productUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      onClick={() => handleProductClick(product)} 
                       className="group block border border-[#e5e0d8] overflow-hidden bg-white hover:border-[#1a1a1a] transition-colors"
                     >
-                      <div className="aspect-[3/4] overflow-hidden relative" style={{ backgroundColor: '#f0ece6' }}>
+                    <div className="aspect-[3/4] overflow-hidden relative" style={{ backgroundColor: '#f0ece6' }}>
                         <img
                           src={product.images?.[0]?.url || product.images?.[0]}
                           alt={product.title}
@@ -88,6 +134,14 @@ const Results = () => {
                         />
                       </div>
 
+                        {product.personalizationBoost > 0 && (
+                          <div className="absolute top-2 right-2 bg-[#8B1A2B] px-2 py-0.5 shadow-sm z-10">
+                            <span className="text-[9px] uppercase tracking-[1px] text-white">
+                              ✨ Top Pick
+                            </span>
+                          </div>
+                        )}
+                      </div>
                       <div className="p-3 bg-white">
                         <p className="text-[9px] uppercase tracking-[2px] text-[#8B1A2B] mb-1">
                           {product.storeName || product.brand}
