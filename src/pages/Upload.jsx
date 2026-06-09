@@ -84,19 +84,44 @@ const Upload = () => {
       return;
     }
     setIsLoading(true);
+    
     const croppedImagesBase64 = savedCrops.map(item => ({
       image: getCroppedImg(imgRef.current, item.crop),
-      category: item.category,
     }));
+
+    let currentUserId = null;
+    const userStorage = localStorage.getItem('user');
+    if (userStorage) {
+      try {
+        const loggedInUser = JSON.parse(userStorage);
+        currentUserId = loggedInUser._id || loggedInUser.id;
+      } catch (e) {
+        console.error("Error parsing user data");
+      }
+    }
+
     try {
       const response = await fetch(`${apiUrl}/api/search/visual-search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: croppedImagesBase64, filters }),
+        body: JSON.stringify({ 
+          items: croppedImagesBase64, 
+          filters,
+          userId: currentUserId 
+        }),
       });
+      
       const data = await response.json();
+      
       if (data.success) {
-        navigate('/results', { state: { searchResults: data.data, originalItems: croppedImagesBase64 } });
+        navigate('/results', { 
+          state: { 
+            searchResults: data.data, 
+            originalItems: croppedImagesBase64,
+            isPersonalized: data.isPersonalized, 
+            appliedStores: data.appliedStores   
+          } 
+        });
       } else {
         alert('Search failed: ' + data.error);
       }
