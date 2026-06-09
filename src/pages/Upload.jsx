@@ -21,7 +21,6 @@ const Upload = () => {
   const [isLoading, setIsLoading] = useState(false);
   const imgRef = useRef(null);
   const navigate = useNavigate();
-  const [selectedCategory, setSelectedCategory] = useState('top');
   const [availableStores, setAvailableStores] = useState([]);
   const [bgImages, setBgImages] = useState([]);
 
@@ -72,7 +71,7 @@ const Upload = () => {
 
   const addCropToList = () => {
     if (completedCrop && savedCrops.length < 3) {
-      setSavedCrops([...savedCrops, { crop: completedCrop, category: selectedCategory }]);
+      setSavedCrops([...savedCrops, { crop: completedCrop }]);
       setCrop(undefined);
     } else if (savedCrops.length >= 3) {
       alert('Maximum 3 items allowed per search.');
@@ -88,7 +87,6 @@ const Upload = () => {
     
     const croppedImagesBase64 = savedCrops.map(item => ({
       image: getCroppedImg(imgRef.current, item.crop),
-      category: item.category,
     }));
 
     let currentUserId = null;
@@ -363,27 +361,13 @@ const Upload = () => {
                   Reset
                 </button>
 
-                {/* Category + Add */}
-                <div className="flex border border-[#e5e0d8]">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="px-3 py-2.5 text-xs bg-transparent outline-none text-gray-600 cursor-pointer uppercase tracking-[1px]"
-                  >
-                    <option value="top">Top</option>
-                    <option value="bottom">Bottom</option>
-                    <option value="skirt">Skirt</option>
-                    <option value="dress">Dress</option>
-                    <option value="shoes">Shoes</option>
-                  </select>
-                  <button
-                    onClick={addCropToList}
-                    disabled={!completedCrop || isLoading}
-                    className="px-5 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] hover:bg-[#333] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border-l border-[#333]"
-                  >
-                    + Add
-                  </button>
-                </div>
+                <button
+                  onClick={addCropToList}
+                  disabled={!completedCrop || isLoading}
+                  className="px-5 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] hover:bg-[#333] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed border border-[#1a1a1a]"
+                >
+                  + Add
+                </button>
 
                 {/* Search */}
                 <button
