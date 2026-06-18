@@ -14,3 +14,8 @@ body {
 .font-display {
   font-family: 'Playfair Display', Georgia, serif;
 }
+
+@keyframes scroll-strip {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}

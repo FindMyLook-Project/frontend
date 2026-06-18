@@ -44,7 +44,6 @@ const Results = () => {
         }
       };
 
-      // 4. שולחים לבקאנד
       await fetch(`${apiUrl}/api/profile/track`, {
         method: 'POST',
         headers: {
@@ -125,7 +124,7 @@ const Results = () => {
                       onClick={() => handleProductClick(product)} 
                       className="group block border border-[#e5e0d8] overflow-hidden bg-white hover:border-[#1a1a1a] transition-colors"
                     >
-                    <div className="aspect-[3/4] overflow-hidden relative" style={{ backgroundColor: '#f0ece6' }}>
+                      <div className="aspect-[3/4] overflow-hidden relative" style={{ backgroundColor: '#f0ece6' }}>
                         <img
                           src={product.images?.[0]?.url || product.images?.[0]}
                           alt={product.title}
@@ -133,12 +132,6 @@ const Results = () => {
                           onError={(e) => { e.target.style.display = 'none'; }}
                         />
                         
-                        <div className="absolute top-2 left-2 bg-white border border-[#e5e0d8] px-2 py-0.5">
-                          <span className="text-[9px] uppercase tracking-[1px] text-[#1a1a1a]">
-                            {Math.round(product.searchScore * 100)}%
-                          </span>
-                        </div>
-
                         {product.personalizationBoost > 0 && (
                           <div className="absolute top-2 right-2 bg-[#8B1A2B] px-2 py-0.5 shadow-sm z-10">
                             <span className="text-[9px] uppercase tracking-[1px] text-white">
@@ -147,6 +140,7 @@ const Results = () => {
                           </div>
                         )}
                       </div>
+
                       <div className="p-3 bg-white">
                         <p className="text-[9px] uppercase tracking-[2px] text-[#8B1A2B] mb-1">
                           {product.storeName || product.brand}
