@@ -58,6 +58,37 @@ const Results = () => {
     }
   };
 
+  const handleFeedback = async (e, product, type) => {
+    e.preventDefault(); 
+    e.stopPropagation();
+
+    try {
+      const userStorage = localStorage.getItem('user'); 
+      if (!userStorage) {
+        alert("Please log in to save your style preferences!");
+        return; 
+      }
+      
+      const loggedInUser = JSON.parse(userStorage);
+      const realUserId = loggedInUser._id || loggedInUser.id; 
+
+      await fetch(`${apiUrl}/api/profile/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: realUserId,
+          storeName: product.storeName || product.brand,
+          feedbackType: type
+        })
+      });
+
+      alert(type === 'like' ? 'We will show you more like this! ❤️' : 'Got it! We will show less of this. 🙅‍♀️');
+      
+    } catch (error) {
+      console.error("Failed to send feedback:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f8f6f3' }}>
       <Navbar />
@@ -122,7 +153,7 @@ const Results = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => handleProductClick(product)} 
-                      className="group block border border-[#e5e0d8] overflow-hidden bg-white hover:border-[#1a1a1a] transition-colors"
+                      className="group block border border-[#e5e0d8] overflow-hidden bg-white hover:border-[#1a1a1a] transition-colors flex flex-col"
                     >
                       <div className="aspect-[3/4] overflow-hidden relative" style={{ backgroundColor: '#f0ece6' }}>
                         <img
@@ -132,6 +163,14 @@ const Results = () => {
                           onError={(e) => { e.target.style.display = 'none'; }}
                         />
                         
+                        {/* תגית אחוז ההתאמה הויזואלית */}
+                        <div className="absolute top-2 left-2 bg-white border border-[#e5e0d8] px-2 py-0.5 z-10 shadow-sm">
+                          <span className="text-[9px] uppercase tracking-[1px] text-[#1a1a1a]">
+                            {Math.round((product.searchScore || 0) * 100)}%
+                          </span>
+                        </div>
+
+                        {/* תגית ההתאמה האישית */}
                         {product.personalizationBoost > 0 && (
                           <div className="absolute top-2 right-2 bg-[#8B1A2B] px-2 py-0.5 shadow-sm z-10">
                             <span className="text-[9px] uppercase tracking-[1px] text-white">
@@ -141,14 +180,48 @@ const Results = () => {
                         )}
                       </div>
 
-                      <div className="p-3 bg-white">
-                        <p className="text-[9px] uppercase tracking-[2px] text-[#8B1A2B] mb-1">
-                          {product.storeName || product.brand}
-                        </p>
-                        <p className="text-xs text-[#1a1a1a] line-clamp-2 leading-snug text-right" dir="rtl">
-                          {product.title}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-2">₪{product.price}</p>
+                      {/* מידע על המוצר + כפתורי משוב */}
+                      <div className="p-3 bg-white flex flex-col h-full justify-between">
+                        <div>
+                          <p className="text-[9px] uppercase tracking-[2px] text-[#8B1A2B] mb-1">
+                            {product.storeName || product.brand}
+                          </p>
+                          <p className="text-xs text-[#1a1a1a] line-clamp-2 leading-snug text-right" dir="rtl">
+                            {product.title}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-2">₪{product.price}</p>
+                        </div>
+                        
+                        {/* כפתורי המשוב האקטיבי (Feedback Loop) */}
+                        {/* כפתורי המשוב האקטיבי (Feedback Loop) */}
+                        <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
+                           <span className="text-[10px] text-gray-400">Rate this match:</span>
+                           <div className="flex gap-3">
+                             {/* כפתור דיסלייק */}
+                             <button 
+                               onClick={(e) => handleFeedback(e, product, 'dislike')}
+                               className="text-gray-400 hover:text-[#1a1a1a] hover:bg-gray-100 rounded-full p-1.5 transition-all"
+                               title="Show less of this style"
+                             >
+                               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                 <path d="M17 14V2" />
+                                 <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z" />
+                               </svg>
+                             </button>
+
+                             {/* כפתור לייק */}
+                             <button 
+                               onClick={(e) => handleFeedback(e, product, 'like')}
+                               className="text-gray-400 hover:text-[#8B1A2B] hover:bg-red-50 rounded-full p-1.5 transition-all"
+                               title="Show more of this style"
+                             >
+                               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                 <path d="M7 10v12" />
+                                 <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z" />
+                               </svg>
+                             </button>
+                           </div>
+                        </div>
                       </div>
                     </a>
                   ))}
