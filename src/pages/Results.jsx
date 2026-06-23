@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
@@ -10,6 +10,21 @@ const Results = () => {
 
   const searchResults = location.state?.searchResults || [];
   const originalItems = location.state?.originalItems || [];
+
+  const [savedIds, setSavedIds] = useState(new Set());
+
+  useEffect(() => {
+    const userStorage = localStorage.getItem('user');
+    if (!userStorage) return;
+    const loggedInUser = JSON.parse(userStorage);
+    const userId = loggedInUser._id || loggedInUser.id;
+    if (!userId) return;
+
+    fetch(`${apiUrl}/api/profile/saved/${userId}`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setSavedIds(new Set(d.data.map(p => p._id))); })
+      .catch(() => {});
+  }, []);
 
   const formatCategory = (category) => {
     if (!category) return 'Item';
@@ -86,6 +101,44 @@ const Results = () => {
       
     } catch (error) {
       console.error("Failed to send feedback:", error);
+    }
+  };
+
+  const handleSave = async (e, product) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const userStorage = localStorage.getItem('user');
+    if (!userStorage) {
+      alert("Please log in to save items!");
+      return;
+    }
+
+    const loggedInUser = JSON.parse(userStorage);
+    const userId = loggedInUser._id || loggedInUser.id;
+    const productId = product._id;
+
+    // Optimistic update
+    setSavedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(productId)) next.delete(productId); else next.add(productId);
+      return next;
+    });
+
+    try {
+      await fetch(`${apiUrl}/api/profile/save`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, productId }),
+      });
+    } catch (error) {
+      // Revert on failure
+      setSavedIds(prev => {
+        const next = new Set(prev);
+        if (next.has(productId)) next.delete(productId); else next.add(productId);
+        return next;
+      });
+      console.error("Failed to save item:", error);
     }
   };
 
@@ -192,35 +245,45 @@ const Results = () => {
                           <p className="text-xs text-gray-500 mt-2">₪{product.price}</p>
                         </div>
                         
-                        {/* כפתורי המשוב האקטיבי (Feedback Loop) */}
-                        {/* כפתורי המשוב האקטיבי (Feedback Loop) */}
                         <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
-                           <span className="text-[10px] text-gray-400">Rate this match:</span>
-                           <div className="flex gap-3">
-                             {/* כפתור דיסלייק */}
-                             <button 
-                               onClick={(e) => handleFeedback(e, product, 'dislike')}
-                               className="text-gray-400 hover:text-[#1a1a1a] hover:bg-gray-100 rounded-full p-1.5 transition-all"
-                               title="Show less of this style"
-                             >
-                               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                 <path d="M17 14V2" />
-                                 <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z" />
-                               </svg>
-                             </button>
+                          {/* Save / bookmark */}
+                          <button
+                            onClick={(e) => handleSave(e, product)}
+                            className={`rounded-full p-1.5 transition-all ${
+                              savedIds.has(product._id)
+                                ? 'text-[#8B1A2B] hover:bg-red-50'
+                                : 'text-gray-400 hover:text-[#1a1a1a] hover:bg-gray-100'
+                            }`}
+                            title={savedIds.has(product._id) ? "Remove from saved" : "Save item"}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill={savedIds.has(product._id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                            </svg>
+                          </button>
 
-                             {/* כפתור לייק */}
-                             <button 
-                               onClick={(e) => handleFeedback(e, product, 'like')}
-                               className="text-gray-400 hover:text-[#8B1A2B] hover:bg-red-50 rounded-full p-1.5 transition-all"
-                               title="Show more of this style"
-                             >
-                               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                 <path d="M7 10v12" />
-                                 <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z" />
-                               </svg>
-                             </button>
-                           </div>
+                          {/* Rate: dislike / like */}
+                          <div className="flex gap-3">
+                            <button
+                              onClick={(e) => handleFeedback(e, product, 'dislike')}
+                              className="text-gray-400 hover:text-[#1a1a1a] hover:bg-gray-100 rounded-full p-1.5 transition-all"
+                              title="Show less of this style"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M17 14V2" />
+                                <path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={(e) => handleFeedback(e, product, 'like')}
+                              className="text-gray-400 hover:text-[#8B1A2B] hover:bg-red-50 rounded-full p-1.5 transition-all"
+                              title="Show more of this style"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M7 10v12" />
+                                <path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </a>
