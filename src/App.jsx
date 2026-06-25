@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import Signup from './pages/SignUp';
 import Upload from './pages/Upload';
 import Results from './pages/Results';
+import SavedItems from './pages/SavedItems';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         
         <Route path="/upload" element={<Upload />} />
         <Route path="/results" element={<Results />} />
+        <Route path="/saved" element={<SavedItems />} />
       </Routes>
     </Router>
   );

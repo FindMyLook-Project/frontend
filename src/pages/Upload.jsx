@@ -143,13 +143,13 @@ const Upload = () => {
   /* ─── Pre-upload view ─────────────────────────────────────── */
   if (!imgSrc) {
     return (
-      <div style={{ backgroundColor: '#f8f6f3' }}>
+      <div style={{ backgroundColor: '#f8f6f3', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Navbar />
 
-        {/* Hero: 5-column portrait grid */}
-        <div style={{ display: 'flex', width: '100%', margin: 0, padding: 0, alignItems: 'stretch' }}>
+        {/* Hero: 5-column portrait grid — fills all space not taken by upload section */}
+        <div style={{ display: 'flex', width: '100%', margin: 0, padding: 0, flex: '1 1 0', minHeight: 0, overflow: 'hidden' }}>
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} style={{ flex: 1, aspectRatio: '2/3', overflow: 'hidden', backgroundColor: '#e8e3dc' }}>
+            <div key={i} style={{ flex: 1, overflow: 'hidden', backgroundColor: '#e8e3dc' }}>
               {bgImages[i] && (
                 <img
                   src={bgImages[i].images[0].url}
@@ -161,25 +161,25 @@ const Upload = () => {
           ))}
         </div>
 
-        {/* Upload section */}
-        <div className="max-w-xl mx-auto px-6 py-16 text-center">
-          <p className="text-[10px] uppercase tracking-[3px] text-gray-400 mb-4">Upload your look</p>
+        {/* Upload section — sized by its content; hero fills the rest */}
+        <div className="max-w-xl mx-auto px-6 py-6 text-center" style={{ flexShrink: 0 }}>
+          <p className="text-[10px] uppercase tracking-[3px] text-gray-400 mb-2">Upload your look</p>
           <h2
-            className="text-4xl md:text-5xl text-[#1a1a1a] mb-4 leading-tight"
+            className="text-3xl md:text-4xl text-[#1a1a1a] mb-2 leading-tight"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
             Find what you're<br />wearing
           </h2>
-          <p className="text-sm text-gray-400 mb-10">
+          <p className="text-sm text-gray-400 mb-4">
             Upload a photo and we'll find every item for you to shop
           </p>
 
           {/* Steps */}
-          <div className="grid grid-cols-3 border border-[#e5e0d8] mb-10">
+          <div className="grid grid-cols-3 border border-[#e5e0d8] mb-4">
             {STEPS.map((step, i) => (
               <div
                 key={i}
-                className={`px-4 py-4 text-left ${i < 2 ? 'border-r border-[#e5e0d8]' : ''}`}
+                className={`px-4 py-3 text-left ${i < 2 ? 'border-r border-[#e5e0d8]' : ''}`}
               >
                 <p className={`text-xs font-semibold ${i === activeStep ? 'text-[#8B1A2B]' : 'text-gray-300'}`}>
                   {step.num}
@@ -194,12 +194,12 @@ const Upload = () => {
           {/* Drop zone */}
           <div
             {...getRootProps()}
-            className={`w-full py-16 border border-[#e5e0d8] bg-white cursor-pointer transition-colors ${
+            className={`w-full py-7 border border-[#e5e0d8] bg-white cursor-pointer transition-colors ${
               isDragActive ? 'border-[#1a1a1a] bg-[#f8f6f3]' : 'hover:border-[#1a1a1a]'
             }`}
           >
             <input {...getInputProps()} />
-            <svg className="w-8 h-8 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+            <svg className="w-7 h-7 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
