@@ -198,7 +198,7 @@ const Results = () => {
 
               {/* Product grid */}
               {products.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-start">
                   {products.map((product, pIndex) => (
                     <a
                       key={pIndex}
@@ -234,7 +234,7 @@ const Results = () => {
                       </div>
 
                       {/* מידע על המוצר + כפתורי משוב */}
-                      <div className="p-3 bg-white flex flex-col h-full justify-between">
+                      <div className="p-3 bg-white flex flex-col">
                         <div>
                           <p className="text-[9px] uppercase tracking-[2px] text-[#8B1A2B] mb-1">
                             {product.storeName || product.brand}
@@ -242,10 +242,12 @@ const Results = () => {
                           <p className="text-xs text-[#1a1a1a] line-clamp-2 leading-snug text-right" dir="rtl">
                             {product.title}
                           </p>
-                          <p className="text-xs text-gray-500 mt-2">₪{product.price}</p>
+                          {/* הקטנו פה את ה-mt ל-1 כדי לקרב למחיר */}
+                          <p className="text-xs text-gray-500 mt-1">₪{product.price}</p>
                         </div>
                         
-                        <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
+                        {/* צמצמנו את הרווח (mt, pt) לפני שורת הכפתורים */}
+                        <div className="flex justify-between items-center mt-2.5 pt-2.5 border-t border-gray-100">
                           {/* Save / bookmark */}
                           <button
                             onClick={(e) => handleSave(e, product)}

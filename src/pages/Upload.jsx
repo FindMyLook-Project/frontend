@@ -328,7 +328,7 @@ const Upload = () => {
                   ref={imgRef}
                   src={imgSrc}
                   alt="Upload"
-                  className="max-h-[58vh]"
+                  className="max-h-[30vh] w-auto object-contain mx-auto"
                 />
               </ReactCrop>
             </div>
