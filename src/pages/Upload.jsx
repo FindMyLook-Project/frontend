@@ -7,13 +7,19 @@ import { useNavigate } from 'react-router-dom';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
-const STEPS = [
+const ITEM_STEPS = [
   { num: '01', label: 'Upload' },
   { num: '02', label: 'Select item' },
   { num: '03', label: 'Find it' },
 ];
 
+const TOTAL_LOOK_STEPS = [
+  { num: '01', label: 'Upload' },
+  { num: '02', label: 'Find look' },
+];
+
 const Upload = () => {
+  const [searchMode, setSearchMode] = useState('totalLook');
   const [imgSrc, setImgSrc] = useState('');
   const [crop, setCrop] = useState();
   const [completedCrop, setCompletedCrop] = useState();
@@ -30,6 +36,9 @@ const Upload = () => {
     preferredStores: [],
   });
 
+  const isTotalLook = searchMode === 'totalLook';
+  const steps = isTotalLook ? TOTAL_LOOK_STEPS : ITEM_STEPS;
+
   useEffect(() => {
     fetch(`${apiUrl}/api/search/stores`)
       .then(r => r.json())
@@ -44,19 +53,35 @@ const Upload = () => {
       .catch(() => {});
   }, []);
 
-  const getCroppedImg = (image, crop) => {
+  const getUserId = () => {
+    const userStorage = localStorage.getItem('user');
+    if (!userStorage) return null;
+    try {
+      const user = JSON.parse(userStorage);
+      return user._id || user.id || null;
+    } catch {
+      return null;
+    }
+  };
+
+  const getCroppedImg = (image, cropRect) => {
     const canvas = document.createElement('canvas');
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
-    canvas.width = crop.width;
-    canvas.height = crop.height;
+    canvas.width = cropRect.width;
+    canvas.height = cropRect.height;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(image, crop.x * scaleX, crop.y * scaleY, crop.width * scaleX, crop.height * scaleY, 0, 0, crop.width, crop.height);
+    ctx.drawImage(
+      image,
+      cropRect.x * scaleX, cropRect.y * scaleY,
+      cropRect.width * scaleX, cropRect.height * scaleY,
+      0, 0, cropRect.width, cropRect.height
+    );
     return canvas.toDataURL('image/jpeg');
   };
 
   const onSelectFile = (acceptedFiles) => {
-    if (acceptedFiles && acceptedFiles.length > 0) {
+    if (acceptedFiles?.length > 0) {
       const reader = new FileReader();
       reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
       reader.readAsDataURL(acceptedFiles[0]);
@@ -69,6 +94,17 @@ const Upload = () => {
     multiple: false,
   });
 
+  const resetAll = () => {
+    setImgSrc('');
+    setSavedCrops([]);
+    setCrop(undefined);
+  };
+
+  const switchMode = (mode) => {
+    setSearchMode(mode);
+    resetAll();
+  };
+
   const addCropToList = () => {
     if (completedCrop && savedCrops.length < 3) {
       setSavedCrops([...savedCrops, { crop: completedCrop }]);
@@ -78,75 +114,189 @@ const Upload = () => {
     }
   };
 
-  const handleSearch = async () => {
+  const handleItemSearch = async () => {
     if (savedCrops.length === 0) {
       alert('Please select at least one item to search.');
       return;
     }
     setIsLoading(true);
-    
     const croppedImagesBase64 = savedCrops.map(item => ({
       image: getCroppedImg(imgRef.current, item.crop),
     }));
-
-    let currentUserId = null;
-    const userStorage = localStorage.getItem('user');
-    if (userStorage) {
-      try {
-        const loggedInUser = JSON.parse(userStorage);
-        currentUserId = loggedInUser._id || loggedInUser.id;
-      } catch (e) {
-        console.error("Error parsing user data");
-      }
-    }
 
     try {
       const response = await fetch(`${apiUrl}/api/search/visual-search`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          items: croppedImagesBase64, 
+        body: JSON.stringify({
+          items: croppedImagesBase64,
           filters,
-          userId: currentUserId 
+          userId: getUserId(),
         }),
       });
-      
       const data = await response.json();
-      
       if (data.success) {
-        navigate('/results', { 
-          state: { 
-            searchResults: data.data, 
+        navigate('/results', {
+          state: {
+            mode: 'item',
+            searchResults: data.data,
             originalItems: croppedImagesBase64,
-            isPersonalized: data.isPersonalized, 
-            appliedStores: data.appliedStores   
-          } 
+            isPersonalized: data.isPersonalized,
+            appliedStores: data.appliedStores,
+          },
         });
       } else {
         alert('Search failed: ' + data.error);
       }
-    } catch (error) {
+    } catch {
       alert('Make sure the backend is running.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const resetAll = () => {
-    setImgSrc('');
-    setSavedCrops([]);
-    setCrop(undefined);
+  const handleTotalLookSearch = async () => {
+    if (!imgSrc) return;
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${apiUrl}/api/search/total-look`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: imgSrc,
+          filters,
+          userId: getUserId(),
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        navigate('/results', {
+          state: {
+            mode: 'totalLook',
+            sourceImage: imgSrc,
+            totalLook: data.look,
+            isPersonalized: data.isPersonalized,
+            appliedStores: data.appliedStores,
+          },
+        });
+      } else {
+        alert('Search failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch {
+      alert('Make sure the backend and ML services are running.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const activeStep = imgSrc ? 1 : 0;
+  const modeToggle = (
+    <div className="flex border border-[#e5e0d8] mb-4 max-w-xl">
+      <button
+        type="button"
+        onClick={() => switchMode('totalLook')}
+        className={`flex-1 py-3 text-[11px] uppercase tracking-[2px] transition-colors cursor-pointer ${
+          isTotalLook ? 'bg-[#1a1a1a] text-white' : 'bg-white text-gray-400 hover:text-[#1a1a1a]'
+        }`}
+      >
+        Find Total Look
+      </button>
+      <button
+        type="button"
+        onClick={() => switchMode('item')}
+        className={`flex-1 py-3 text-[11px] uppercase tracking-[2px] border-l border-[#e5e0d8] transition-colors cursor-pointer ${
+          !isTotalLook ? 'bg-[#1a1a1a] text-white' : 'bg-white text-gray-400 hover:text-[#1a1a1a]'
+        }`}
+      >
+        Find Items
+      </button>
+    </div>
+  );
 
-  /* ─── Pre-upload view ─────────────────────────────────────── */
+  const filtersPanel = (
+    <div className="w-full lg:w-72 bg-white border border-[#e5e0d8] p-6 self-start shrink-0">
+      <p className="text-[10px] uppercase tracking-[3px] text-gray-400 mb-6 pb-4 border-b border-[#e5e0d8]">
+        Personalize
+      </p>
+      <div className="mb-7">
+        <label className="block text-[10px] uppercase tracking-[2px] text-gray-400 mb-3">
+          Max price:{' '}
+          <span className="text-[#1a1a1a] font-medium">₪{filters.priceRange}</span>
+        </label>
+        <input
+          type="range"
+          min="0"
+          max="2000"
+          step="50"
+          value={filters.priceRange}
+          onChange={(e) => setFilters({ ...filters, priceRange: e.target.value })}
+          className="w-full h-px bg-[#e5e0d8] appearance-none cursor-pointer accent-[#1a1a1a]"
+        />
+      </div>
+      <div className="mb-7">
+        <label className="block text-[10px] uppercase tracking-[2px] text-gray-400 mb-3">Store type</label>
+        <div className="flex gap-4">
+          {['online', 'physical'].map((type) => (
+            <label key={type} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={filters.storeType[type]}
+                onChange={() =>
+                  setFilters({
+                    ...filters,
+                    storeType: { ...filters.storeType, [type]: !filters.storeType[type] },
+                  })
+                }
+                className="w-3 h-3 border border-[#e5e0d8] accent-[#1a1a1a]"
+              />
+              <span className="capitalize text-xs text-gray-500">{type}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      <div>
+        <label className="block text-[10px] uppercase tracking-[2px] text-gray-400 mb-3">Preferred stores</label>
+        {availableStores.length > 0 ? (
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            {availableStores.map((store) => (
+              <label key={store.key} className="flex items-center gap-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  className="w-3 h-3 border border-[#e5e0d8] accent-[#1a1a1a]"
+                  checked={filters.preferredStores.includes(store.key)}
+                  onChange={(e) => {
+                    const updated = e.target.checked
+                      ? [...filters.preferredStores, store.key]
+                      : filters.preferredStores.filter((s) => s !== store.key);
+                    setFilters({ ...filters, preferredStores: updated });
+                  }}
+                />
+                <span className="text-xs text-gray-500 group-hover:text-[#1a1a1a] transition-colors">
+                  {store.name}
+                </span>
+              </label>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-gray-300 italic">Loading stores...</p>
+        )}
+      </div>
+    </div>
+  );
+
+  const loadingButton = (label) => (
+    <>
+      <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+      {label}
+    </>
+  );
+
+  const activeStep = imgSrc ? 1 : 0;
+  const stepCols = isTotalLook ? 'grid-cols-2' : 'grid-cols-3';
+
   if (!imgSrc) {
     return (
       <div style={{ backgroundColor: '#f8f6f3', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <Navbar />
-
-        {/* Hero: 5-column portrait grid — fills all space not taken by upload section */}
         <div style={{ display: 'flex', width: '100%', margin: 0, padding: 0, flex: '1 1 0', minHeight: 0, overflow: 'hidden' }}>
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} style={{ flex: 1, overflow: 'hidden', backgroundColor: '#e8e3dc' }}>
@@ -160,38 +310,25 @@ const Upload = () => {
             </div>
           ))}
         </div>
-
-        {/* Upload section — sized by its content; hero fills the rest */}
         <div className="max-w-xl mx-auto px-6 py-6 text-center" style={{ flexShrink: 0 }}>
           <p className="text-[10px] uppercase tracking-[3px] text-gray-400 mb-2">Upload your look</p>
-          <h2
-            className="text-3xl md:text-4xl text-[#1a1a1a] mb-2 leading-tight"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
+          <h2 className="text-3xl md:text-4xl text-[#1a1a1a] mb-2 leading-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
             Find what you're<br />wearing
           </h2>
           <p className="text-sm text-gray-400 mb-4">
-            Upload a photo and we'll find every item for you to shop
+            {isTotalLook
+              ? 'Upload a full-body photo — we detect every item automatically'
+              : 'Upload a photo and crop the items you want to shop'}
           </p>
-
-          {/* Steps */}
-          <div className="grid grid-cols-3 border border-[#e5e0d8] mb-4">
-            {STEPS.map((step, i) => (
-              <div
-                key={i}
-                className={`px-4 py-3 text-left ${i < 2 ? 'border-r border-[#e5e0d8]' : ''}`}
-              >
-                <p className={`text-xs font-semibold ${i === activeStep ? 'text-[#8B1A2B]' : 'text-gray-300'}`}>
-                  {step.num}
-                </p>
-                <p className={`text-sm mt-0.5 ${i === activeStep ? 'text-[#1a1a1a]' : 'text-gray-300'}`}>
-                  {step.label}
-                </p>
+          {modeToggle}
+          <div className={`grid ${stepCols} border border-[#e5e0d8] mb-4`}>
+            {steps.map((step, i) => (
+              <div key={i} className={`px-4 py-3 text-left ${i < steps.length - 1 ? 'border-r border-[#e5e0d8]' : ''}`}>
+                <p className={`text-xs font-semibold ${i === activeStep ? 'text-[#8B1A2B]' : 'text-gray-300'}`}>{step.num}</p>
+                <p className={`text-sm mt-0.5 ${i === activeStep ? 'text-[#1a1a1a]' : 'text-gray-300'}`}>{step.label}</p>
               </div>
             ))}
           </div>
-
-          {/* Drop zone */}
           <div
             {...getRootProps()}
             className={`w-full py-7 border border-[#e5e0d8] bg-white cursor-pointer transition-colors ${
@@ -199,195 +336,99 @@ const Upload = () => {
             }`}
           >
             <input {...getInputProps()} />
-            <svg className="w-7 h-7 mx-auto mb-3 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
             <p className="text-sm text-gray-500">Drop your outfit photo here</p>
             <p className="text-xs text-gray-300 mt-1">or click to browse</p>
           </div>
         </div>
-
       </div>
     );
   }
 
-  /* ─── Post-upload / crop view ─────────────────────────────── */
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f8f6f3' }}>
       <Navbar />
-
       <div className="max-w-7xl mx-auto px-6 py-8">
-
-        {/* Steps — step 02 active */}
-        <div className="grid grid-cols-3 border border-[#e5e0d8] mb-8 max-w-xl">
-          {STEPS.map((step, i) => (
-            <div
-              key={i}
-              className={`px-4 py-3 text-left ${i < 2 ? 'border-r border-[#e5e0d8]' : ''}`}
-            >
-              <p className={`text-xs font-semibold ${i === 1 ? 'text-[#8B1A2B]' : 'text-gray-300'}`}>
-                {step.num}
-              </p>
-              <p className={`text-sm mt-0.5 ${i === 1 ? 'text-[#1a1a1a]' : 'text-gray-300'}`}>
-                {step.label}
-              </p>
+        {modeToggle}
+        <div className={`grid ${stepCols} border border-[#e5e0d8] mb-8 max-w-xl`}>
+          {steps.map((step, i) => (
+            <div key={i} className={`px-4 py-3 text-left ${i < steps.length - 1 ? 'border-r border-[#e5e0d8]' : ''}`}>
+              <p className={`text-xs font-semibold ${i === 1 ? 'text-[#8B1A2B]' : 'text-gray-300'}`}>{step.num}</p>
+              <p className={`text-sm mt-0.5 ${i === 1 ? 'text-[#1a1a1a]' : 'text-gray-300'}`}>{step.label}</p>
             </div>
           ))}
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
+          {filtersPanel}
 
-          {/* Left: Personalize filters */}
-          <div className="w-full lg:w-72 bg-white border border-[#e5e0d8] p-6 self-start shrink-0">
-            <p className="text-[10px] uppercase tracking-[3px] text-gray-400 mb-6 pb-4 border-b border-[#e5e0d8]">
-              Personalize
-            </p>
-
-            <div className="mb-7">
-              <label className="block text-[10px] uppercase tracking-[2px] text-gray-400 mb-3">
-                Max price:{' '}
-                <span className="text-[#1a1a1a] font-medium">₪{filters.priceRange}</span>
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="2000"
-                step="50"
-                value={filters.priceRange}
-                onChange={(e) => setFilters({ ...filters, priceRange: e.target.value })}
-                className="w-full h-px bg-[#e5e0d8] appearance-none cursor-pointer accent-[#1a1a1a]"
-              />
-            </div>
-
-            <div className="mb-7">
-              <label className="block text-[10px] uppercase tracking-[2px] text-gray-400 mb-3">
-                Store type
-              </label>
-              <div className="flex gap-4">
-                {['online', 'physical'].map((type) => (
-                  <label key={type} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={filters.storeType[type]}
-                      onChange={() =>
-                        setFilters({
-                          ...filters,
-                          storeType: { ...filters.storeType, [type]: !filters.storeType[type] },
-                        })
-                      }
-                      className="w-3 h-3 border border-[#e5e0d8] accent-[#1a1a1a]"
-                    />
-                    <span className="capitalize text-xs text-gray-500">{type}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[10px] uppercase tracking-[2px] text-gray-400 mb-3">
-                Preferred stores
-              </label>
-              {availableStores.length > 0 ? (
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-                  {availableStores.map((store) => (
-                    <label key={store.key} className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        className="w-3 h-3 border border-[#e5e0d8] accent-[#1a1a1a]"
-                        onChange={(e) => {
-                          const updated = e.target.checked
-                            ? [...filters.preferredStores, store.key]
-                            : filters.preferredStores.filter((s) => s !== store.key);
-                          setFilters({ ...filters, preferredStores: updated });
-                        }}
-                      />
-                      <span className="text-xs text-gray-500 group-hover:text-[#1a1a1a] transition-colors">
-                        {store.name}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+          <div className="flex-1 flex flex-col">
+            <div className="bg-white border border-[#e5e0d8] w-full flex justify-center overflow-hidden p-4">
+              {isTotalLook ? (
+                <img src={imgSrc} alt="Your outfit" className="max-h-[58vh] object-contain" />
               ) : (
-                <p className="text-xs text-gray-300 italic">Loading stores...</p>
+                <ReactCrop crop={crop} onChange={(c) => setCrop(c)} onComplete={(c) => setCompletedCrop(c)}>
+                  <img ref={imgRef} src={imgSrc} alt="Upload" className="max-h-[30vh] w-auto object-contain mx-auto" />
+                </ReactCrop>
               )}
             </div>
-          </div>
 
-          {/* Right: image + controls */}
-          <div className="flex-1 flex flex-col">
-
-            {/* Crop area */}
-            <div className="bg-white border border-[#e5e0d8] w-full flex justify-center overflow-hidden p-4">
-              <ReactCrop
-                crop={crop}
-                onChange={(c) => setCrop(c)}
-                onComplete={(c) => setCompletedCrop(c)}
-              >
-                <img
-                  ref={imgRef}
-                  src={imgSrc}
-                  alt="Upload"
-                  className="max-h-[30vh] w-auto object-contain mx-auto"
-                />
-              </ReactCrop>
-            </div>
-
-            {/* Controls */}
             <div className="mt-6 bg-white border border-[#e5e0d8] p-6">
-
-              {/* Item counter */}
-              <div className="flex items-center gap-3 mb-6">
-                <span className="text-[10px] uppercase tracking-[2px] text-gray-400">Items selected:</span>
-                <div className="flex gap-2">
-                  {[1, 2, 3].map((num) => (
-                    <div
-                      key={num}
-                      className={`w-7 h-7 flex items-center justify-center text-xs font-medium border transition-all duration-200 ${
-                        savedCrops.length >= num
-                          ? 'bg-[#1a1a1a] border-[#1a1a1a] text-white'
-                          : 'border-[#e5e0d8] text-gray-300'
-                      }`}
-                    >
-                      {num}
-                    </div>
-                  ))}
+              {isTotalLook ? (
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={resetAll}
+                    className="text-[11px] uppercase tracking-[2px] text-gray-400 border border-[#e5e0d8] px-5 py-2.5 hover:border-[#1a1a1a] hover:text-[#1a1a1a] transition-colors cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={handleTotalLookSearch}
+                    disabled={isLoading}
+                    className="ml-auto px-10 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] hover:bg-[#333] transition-colors cursor-pointer disabled:opacity-40 flex items-center gap-2"
+                  >
+                    {isLoading ? loadingButton('Analyzing outfit...') : 'Find Total Look'}
+                  </button>
                 </div>
-              </div>
-
-              {/* Buttons row */}
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  onClick={resetAll}
-                  className="text-[11px] uppercase tracking-[2px] text-gray-400 border border-[#e5e0d8] px-5 py-2.5 hover:border-[#1a1a1a] hover:text-[#1a1a1a] transition-colors cursor-pointer"
-                >
-                  Reset
-                </button>
-
-                <button
-                  onClick={addCropToList}
-                  disabled={!completedCrop || isLoading}
-                  className="px-5 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] hover:bg-[#333] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  + Add
-                </button>
-
-                {/* Search */}
-                <button
-                  onClick={handleSearch}
-                  disabled={savedCrops.length === 0 || isLoading}
-                  className="ml-auto px-10 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] hover:bg-[#333] transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                      Searching...
-                    </>
-                  ) : (
-                    `Find My Look (${savedCrops.length})`
-                  )}
-                </button>
-              </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-3 mb-6">
+                    <span className="text-[10px] uppercase tracking-[2px] text-gray-400">Items selected:</span>
+                    <div className="flex gap-2">
+                      {[1, 2, 3].map((num) => (
+                        <div
+                          key={num}
+                          className={`w-7 h-7 flex items-center justify-center text-xs font-medium border ${
+                            savedCrops.length >= num
+                              ? 'bg-[#1a1a1a] border-[#1a1a1a] text-white'
+                              : 'border-[#e5e0d8] text-gray-300'
+                          }`}
+                        >
+                          {num}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button onClick={resetAll} className="text-[11px] uppercase tracking-[2px] text-gray-400 border border-[#e5e0d8] px-5 py-2.5 cursor-pointer">
+                      Reset
+                    </button>
+                    <button
+                      onClick={addCropToList}
+                      disabled={!completedCrop || isLoading}
+                      className="px-5 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] cursor-pointer disabled:opacity-40"
+                    >
+                      + Add
+                    </button>
+                    <button
+                      onClick={handleItemSearch}
+                      disabled={savedCrops.length === 0 || isLoading}
+                      className="ml-auto px-10 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] cursor-pointer disabled:opacity-40 flex items-center gap-2"
+                    >
+                      {isLoading ? loadingButton('Searching...') : `Find My Look (${savedCrops.length})`}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
