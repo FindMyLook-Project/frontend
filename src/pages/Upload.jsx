@@ -367,7 +367,7 @@ const Upload = () => {
                 <img src={imgSrc} alt="Your outfit" className="max-h-[58vh] object-contain" />
               ) : (
                 <ReactCrop crop={crop} onChange={(c) => setCrop(c)} onComplete={(c) => setCompletedCrop(c)}>
-                  <img ref={imgRef} src={imgSrc} alt="Upload" className="max-h-[58vh]" />
+                  <img ref={imgRef} src={imgSrc} alt="Upload" className="max-h-[30vh] w-auto object-contain mx-auto" />
                 </ReactCrop>
               )}
             </div>
