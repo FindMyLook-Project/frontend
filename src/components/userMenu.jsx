@@ -33,7 +33,7 @@ const UserMenu = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 cursor-pointer select-none group"
       >
-        <div className="w-7 h-7 bg-[#1a1a1a] text-white flex items-center justify-center text-xs font-medium">
+        <div className="w-7 h-7 bg-[#1a1a1a] text-white flex items-center justify-center text-xs font-normal">
           {initial}
         </div>
         <span className="text-xs uppercase tracking-[1.5px] text-[#1a1a1a] group-hover:text-gray-500 transition-colors">
@@ -58,7 +58,7 @@ const UserMenu = () => {
           <div className="absolute right-0 mt-3 w-52 bg-white border border-[#e5e0d8] shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-[#e5e0d8]">
               <p className="text-[9px] uppercase tracking-[2px] text-gray-400 mb-1">Signed in as</p>
-              <p className="text-sm font-medium text-[#1a1a1a] truncate">
+              <p className="text-sm font-normal text-[#1a1a1a] truncate">
                 {user.firstName} {user.lastName}
               </p>
               <p className="text-xs text-gray-400 truncate mt-0.5">{user.email}</p>
