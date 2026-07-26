@@ -17,7 +17,7 @@ const Button = ({ children, to, onClick, type = "button", className = "", disabl
       disabled={disabled}
       className={`
         bg-[#1a1a1a] hover:bg-[#333]
-        text-white text-[11px] font-medium
+        text-white text-[11px] font-normal
         py-3 px-8
         uppercase tracking-[2.5px]
         transition-colors duration-200

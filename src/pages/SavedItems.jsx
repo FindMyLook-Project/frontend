@@ -65,10 +65,7 @@ const SavedItems = () => {
         <div className="flex justify-between items-end mb-12 pb-6 border-b border-[#e5e0d8]">
           <div>
             <p className="text-[10px] uppercase tracking-[3px] text-gray-400 mb-2">Your collection</p>
-            <h1
-              className="text-4xl text-[#1a1a1a]"
-              style={{ fontFamily: "'Playfair Display', serif" }}
-            >
+            <h1 className="font-display text-4xl text-[#1a1a1a]">
               Saved Items
             </h1>
           </div>

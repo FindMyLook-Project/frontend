@@ -1,21 +1,9 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import Login from '../pages/Login';
-import SingUp from '../pages/SingUp';
-import Upload from '../pages/Upload';
-import Results from '../pages/Results';
+/**
+ * Legacy/unused router file. The live route tree is defined in src/App.jsx.
+ * Kept to avoid breaking imports; do not add new routes here.
+ */
+import { Navigate } from 'react-router-dom';
 
-const AppRoutes = () => {
-  return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/login" />} />
-      
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<SingUp />} />
-      <Route path="/upload" element={<Upload />} />
-      <Route path="/results" element={<Results />} />
-    </Routes>
-  );
-};
+const AppRoutes = () => <Navigate to="/login" replace />;
 
 export default AppRoutes;

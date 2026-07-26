@@ -68,18 +68,12 @@ const Login = () => {
       <div className="flex-1 flex items-center justify-center py-10">
       <div className="w-full max-w-md flex flex-col px-6">
         <div className="mb-12">
-          <span
-            className="text-[#8B1A2B] text-4xl uppercase tracking-[6px]"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
+          <span className="font-display text-[#8B1A2B] text-4xl uppercase tracking-[6px]">
             FIND MY LOOK
           </span>
         </div>
 
-        <h2
-          className="text-3xl text-[#1a1a1a] mb-2 leading-snug"
-          style={{ fontFamily: "'Playfair Display', serif" }}
-        >
+        <h2 className="font-display text-3xl text-[#1a1a1a] mb-2 leading-snug">
           Welcome back
         </h2>
         <p className="text-[10px] text-gray-400 uppercase tracking-[2px] mb-10">Sign in to continue</p>

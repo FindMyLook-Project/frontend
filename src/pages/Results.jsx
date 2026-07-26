@@ -1,8 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+const SLOT_LABELS = {
+  dress: 'Dress',
+  top: 'Top',
+  belt: 'Belt',
+  bottom: 'Pants',
+  shorts: 'Shorts',
+  skirt: 'Skirt',
+  shoes: 'Shoes',
+};
 
 function formatDetectedSummary(detected) {
   if (!detected?.color) return 'unknown';
@@ -11,6 +21,11 @@ function formatDetectedSummary(detected) {
   const detail = detected.topStyle || detected.skirtLength || detected.shoeStyle;
   if (detail) parts.push(detail.replace(/_/g, ' '));
   return parts.join(' · ');
+}
+
+function getSlotLabel(slot) {
+  if (slot.label && !/[\u0590-\u05FF]/.test(slot.label)) return slot.label;
+  return SLOT_LABELS[slot.slotId] || slot.label || slot.labelHe || slot.slotId;
 }
 
 const Results = () => {
@@ -26,6 +41,20 @@ const Results = () => {
   const totalLookSlots = totalLook?.slots || [];
 
   const [savedIds, setSavedIds] = useState(new Set());
+  const [activeSlotId, setActiveSlotId] = useState(null);
+  const sectionRefs = useRef({});
+
+  const setSectionRef = useCallback((id) => (el) => {
+    if (el) sectionRefs.current[id] = el;
+    else delete sectionRefs.current[id];
+  }, []);
+
+  const scrollToSection = useCallback((id) => {
+    const el = sectionRefs.current[id];
+    if (!el) return;
+    setActiveSlotId(id);
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
 
   useEffect(() => {
     const userStorage = localStorage.getItem('user');
@@ -155,13 +184,8 @@ const Results = () => {
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 onError={(e) => { e.target.style.display = 'none'; }}
               />
-              <div className="absolute top-2 left-2 bg-white border border-[#e5e0d8] px-2 py-0.5 z-10 shadow-sm">
-                <span className="text-[9px] uppercase tracking-[1px] text-[#1a1a1a]">
-                  {Math.round((product.searchScore || 0) * 100)}%
-                </span>
-              </div>
               {product.personalizationBoost > 0 && (
-                <div className="absolute top-2 right-2 bg-[#8B1A2B] px-2 py-0.5 shadow-sm z-10">
+                <div className="absolute top-2 right-2 bg-[#8B1A2B] px-2 py-0.5 shadow-sm z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out pointer-events-none">
                   <span className="text-[9px] uppercase tracking-[1px] text-white">✨ Top Pick</span>
                 </div>
               )}
@@ -230,7 +254,7 @@ const Results = () => {
         <div className="flex justify-between items-end mb-12 pb-6 border-b border-[#e5e0d8]">
           <div>
             <p className="text-[10px] uppercase tracking-[3px] text-gray-400 mb-2">Your search</p>
-            <h1 className="text-4xl text-[#1a1a1a]" style={{ fontFamily: "'Playfair Display', serif" }}>
+            <h1 className="font-display text-4xl text-[#1a1a1a]">
               {isTotalLook ? 'Total Look Results' : 'Search Results'}
             </h1>
           </div>
@@ -243,30 +267,104 @@ const Results = () => {
         </div>
 
         {isTotalLook && sourceImage && (
-          <div className="flex flex-col md:flex-row gap-6 mb-12 p-6 bg-white border border-[#e5e0d8]">
-            <img src={sourceImage} alt="Your outfit" className="max-h-72 object-contain mx-auto md:mx-0" />
-            <div className="flex flex-col justify-center">
-              <p className="text-[10px] uppercase tracking-[3px] text-[#8B1A2B] mb-2">We detected</p>
-              <p className="text-2xl text-[#1a1a1a]" style={{ fontFamily: "'Playfair Display', serif" }}>
-                {totalLook?.summary?.garmentCount || 0} items in your look
+          <div className="mb-14 flex flex-col sm:flex-row gap-8 sm:gap-10 items-start">
+            <img
+              src={sourceImage}
+              alt="Your outfit"
+              className="w-36 sm:w-44 max-h-56 object-contain shrink-0"
+            />
+
+            <div className="min-w-0 flex-1 pt-1">
+              <p className="text-[10px] uppercase tracking-[3px] text-gray-400 mb-2">Your look</p>
+              <h2 className="font-display text-2xl md:text-3xl font-normal text-[#1a1a1a] leading-snug">
+                {totalLook?.summary?.garmentCount || totalLookSlots.length} pieces detected
+              </h2>
+              <p className="text-sm text-gray-400 mt-2 mb-6 font-light">
+                {totalLook?.summary?.totalMatches || 0} matching products
               </p>
-              <p className="text-sm text-gray-500 mt-2">
-                {totalLook?.summary?.totalMatches || 0} matching products found
-              </p>
+
+              {totalLookSlots.length > 0 && (
+                <nav aria-label="Detected items">
+                  <ul className="flex flex-wrap items-center gap-2">
+                    {totalLookSlots.map((slot) => {
+                      const label = getSlotLabel(slot);
+                      const isActive = activeSlotId === slot.slotId;
+                      return (
+                        <li key={slot.slotId}>
+                          <button
+                            type="button"
+                            onClick={() => scrollToSection(slot.slotId)}
+                            className={`text-[11px] uppercase tracking-[1.5px] font-light px-3 py-1.5 transition-colors duration-300 cursor-pointer border bg-transparent ${
+                              isActive
+                                ? 'border-[#d4cfc6] text-[#8B1A2B]'
+                                : 'border-transparent text-gray-500 hover:text-[#1a1a1a] hover:border-[#e5e0d8]'
+                            }`}
+                          >
+                            {label}
+                            <span className={`ml-1.5 normal-case tracking-normal ${
+                              isActive ? 'text-gray-400' : 'text-gray-300'
+                            }`}>
+                              {slot.matchCount}
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </nav>
+              )}
             </div>
           </div>
         )}
 
+        {!isTotalLook && searchResults.length > 1 && (
+          <nav className="mb-12" aria-label="Searched items">
+            <ul className="flex flex-wrap items-center gap-2">
+              {searchResults.map((searchData, index) => {
+                const id = `item-${index}`;
+                const isActive = activeSlotId === id;
+                return (
+                  <li key={id}>
+                    <button
+                      type="button"
+                      onClick={() => scrollToSection(id)}
+                      className={`text-[11px] uppercase tracking-[1.5px] font-light px-3 py-1.5 transition-colors duration-300 cursor-pointer border bg-transparent ${
+                        isActive
+                          ? 'border-[#d4cfc6] text-[#8B1A2B]'
+                          : 'border-transparent text-gray-500 hover:text-[#1a1a1a] hover:border-[#e5e0d8]'
+                      }`}
+                    >
+                      Item {index + 1}
+                      <span className={`ml-1.5 normal-case tracking-normal ${
+                        isActive ? 'text-gray-400' : 'text-gray-300'
+                      }`}>
+                        {searchData.results?.length || 0}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        )}
+
         {isTotalLook && totalLookSlots.map((slot) => (
-          <div key={slot.slotId} className="mb-16">
+          <div
+            key={slot.slotId}
+            id={`slot-${slot.slotId}`}
+            ref={setSectionRef(slot.slotId)}
+            className="mb-16 scroll-mt-24"
+          >
             <div className="flex items-center gap-4 mb-6">
               {slot.detected?.cropImage && (
                 <div className="w-14 h-14 border border-[#e5e0d8] overflow-hidden shrink-0">
-                  <img src={slot.detected.cropImage} alt={slot.labelHe} className="w-full h-full object-cover" />
+                  <img src={slot.detected.cropImage} alt={getSlotLabel(slot)} className="w-full h-full object-cover" />
                 </div>
               )}
               <div>
-                <p className="text-[9px] uppercase tracking-[3px] text-[#8B1A2B]">{slot.labelHe || slot.label}</p>
+                <p className="text-[9px] uppercase tracking-[3px] text-[#8B1A2B]">
+                  {getSlotLabel(slot)}
+                </p>
                 <p className="text-sm text-[#1a1a1a] mt-0.5">
                   {formatDetectedSummary(slot.detected)} · {slot.matchCount} match{slot.matchCount !== 1 ? 'es' : ''}
                 </p>
@@ -278,8 +376,14 @@ const Results = () => {
 
         {!isTotalLook && searchResults.map((searchData, index) => {
           const originalItem = originalItems[searchData.itemIndex ?? index];
+          const sectionId = `item-${index}`;
           return (
-            <div key={index} className="mb-16">
+            <div
+              key={index}
+              id={sectionId}
+              ref={setSectionRef(sectionId)}
+              className="mb-16 scroll-mt-24"
+            >
               <div className="flex items-center gap-4 mb-6">
                 {originalItem?.image && (
                   <div className="w-12 h-12 border border-[#e5e0d8] overflow-hidden shrink-0">

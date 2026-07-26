@@ -1,21 +1,78 @@
 @import "tailwindcss";
 
+/* ── Typography tokens (Tailwind v4) ─────────────────────────
+   Body / UI: Inter (font-sans)
+   Display / brand / headings: Playfair Display (font-display)
+──────────────────────────────────────────────────────────── */
+@theme {
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
 body {
   background-color: #f8f6f3;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-sans);
+  font-weight: 400;
   color: #1a1a1a;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Display headings & brand — prefer class over inline style */
 .font-display {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-display);
+  font-weight: 400;
+}
+
+/* Shared type roles for a delicate, consistent UI */
+.type-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #9ca3af; /* gray-400 */
+}
+
+.type-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}
+
+.type-button {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.type-meta {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
 }
 
 @keyframes scroll-strip {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.upload-fade-in {
+  animation: fadeIn 0.45s ease-out;
 }
