@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
@@ -10,6 +10,8 @@ const Login = () => {
   const [error, setError] = useState('');
   const [stripImages, setStripImages] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectMessage = location.state?.from ? 'Please log in to continue.' : '';
 
   useEffect(() => {
     fetch(`${apiUrl}/api/products/random?limit=20`)
@@ -77,6 +79,10 @@ const Login = () => {
           Welcome back
         </h2>
         <p className="text-[10px] text-gray-400 uppercase tracking-[2px] mb-10">Sign in to continue</p>
+
+        {redirectMessage && (
+          <p className="text-[11px] text-gray-500 tracking-wide mb-6 -mt-4">{redirectMessage}</p>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-7">
           <div>
