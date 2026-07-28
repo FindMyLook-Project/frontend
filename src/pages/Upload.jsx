@@ -5,8 +5,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 
-const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
-
+const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const ITEM_STEPS = [
   { num: '01', label: 'Upload' },
   { num: '02', label: 'Select items' },
@@ -52,7 +51,7 @@ const Upload = () => {
   }, []);
 
   useEffect(() => {
-    fetch(`${apiUrl}/api/products/random?limit=20`)
+    fetch(`${apiUrl}/api/search/random?limit=20`)
       .then(r => r.json())
       .then(d => { if (d.success) setBgImages(d.data.filter(p => p.images?.[0]?.url)); })
       .catch(() => {});
