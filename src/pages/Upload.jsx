@@ -5,7 +5,7 @@ import 'react-image-crop/dist/ReactCrop.css';
 import Navbar from '../components/Navbar';
 import { useNavigate } from 'react-router-dom';
 
-const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 const ITEM_STEPS = [
   { num: '01', label: 'Upload' },
