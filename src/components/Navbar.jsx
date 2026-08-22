@@ -5,12 +5,12 @@ import UserMenu from './UserMenu';
 const Navbar = () => {
   return (
     <nav
-      className="w-full bg-white border-b border-[#e5e0d8] px-8 flex justify-between items-center sticky top-0 z-50"
+      className="w-full bg-white border-b border-[#e5e0d8] px-3 sm:px-8 flex justify-between items-center sticky top-0 z-50"
       style={{ height: '56px' }}
     >
       <div className="flex-1" />
 
-      <h1 className="font-display text-[#8B1A2B] text-4xl uppercase select-none tracking-[6px]">
+      <h1 className="font-display text-[#8B1A2B] text-lg sm:text-2xl md:text-4xl uppercase select-none tracking-[2px] sm:tracking-[4px] md:tracking-[6px] whitespace-nowrap">
         FIND MY LOOK
       </h1>
 
