@@ -309,13 +309,15 @@ const Results = () => {
             <div key={index} id={sectionId} ref={setSectionRef(sectionId)} className="mb-16 scroll-mt-24">
               <div className="flex items-center gap-4 mb-6">
                 {originalItem?.image && (
-                  <div className="w-12 h-12 border border-[#e5e0d8] overflow-hidden shrink-0">
+                  <div className="w-14 h-14 border border-[#e5e0d8] overflow-hidden shrink-0">
                     <img src={originalItem.image} alt="Your selection" className="w-full h-full object-cover" />
                   </div>
                 )}
                 <div>
-                  <p className="text-[9px] uppercase tracking-[3px] text-[#8B1A2B]">Item {index + 1}</p>
-                  <p className="text-sm text-[#1a1a1a] mt-0.5">{searchData.results?.length || 0} matches found</p>
+                  <p className="text-[9px] uppercase tracking-[3px] text-[#8B1A2B]">
+                    {SLOT_LABELS[searchData.detected?.categoryGroup] || searchData.detected?.categoryGroup || `Item ${index + 1}`}
+                  </p>
+                  <p className="text-sm text-[#1a1a1a] mt-0.5">{formatDetectedSummary(searchData.detected)} · {searchData.results?.length || 0} match{(searchData.results?.length || 0) !== 1 ? 'es' : ''}</p>
                 </div>
               </div>
               {renderProductGrid(searchData.results)}
