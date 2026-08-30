@@ -49,6 +49,37 @@ const Upload = () => {
   const hasImage = Boolean(imgSrc);
   const activeStep = hasImage ? 1 : 0;
 
+  /**
+   * NAVIGATION FIX: Uploading an image is an in-page state change, not a route
+   * change, so by default the browser Back button has nothing correct to step
+   * back to — it pops straight past /upload to whatever preceded it (login, or
+   * even an external site if /upload was the first entry in this tab). We push
+   * a lightweight history marker when the "preview" step is entered (see
+   * onSelectFile) and listen for the native popstate event directly (rather
+   * than only reacting to React Router's location) so we can reliably catch
+   * the back navigation and reset to the clean pre-upload state without
+   * leaving /upload — regardless of how deep the real history stack is.
+   *
+   * If the back navigation would otherwise land somewhere without our marker
+   * while an image is still showing, we reset the UI AND immediately re-plant
+   * a fresh history entry, effectively "absorbing" that back press. A second,
+   * subsequent Back press (now from the genuinely clean state) behaves like a
+   * normal Back and is free to leave the page.
+   */
+  const hasImageRef = useRef(false);
+  useEffect(() => { hasImageRef.current = hasImage; }, [hasImage]);
+
+  useEffect(() => {
+    const handlePopState = (event) => {
+      if (hasImageRef.current && event.state?.uploadStep !== 'preview') {
+        resetAll();
+        window.history.pushState({ uploadStep: 'preview-consumed' }, '', window.location.pathname);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   // Fetch available stores and background images on mount
   useEffect(() => {
     fetch(`${apiUrl}/api/search/stores`)
@@ -95,7 +126,14 @@ const Upload = () => {
   const onSelectFile = (acceptedFiles) => {
     if (acceptedFiles?.length > 0) {
       const reader = new FileReader();
-      reader.addEventListener('load', () => setImgSrc(reader.result?.toString() || ''));
+      reader.addEventListener('load', () => {
+        setImgSrc(reader.result?.toString() || '');
+        // Push a raw history entry (bypassing React Router's navigate, which
+        // was not reliably creating a distinct entry for a same-pathname
+        // navigation) so the browser Back button steps back to the clean
+        // upload state instead of leaving /upload entirely.
+        window.history.pushState({ uploadStep: 'preview' }, '', window.location.pathname);
+      });
       reader.readAsDataURL(acceptedFiles[0]);
     }
   };
@@ -111,6 +149,14 @@ const Upload = () => {
 
   const resetAll = () => {
     setImgSrc('');
+    setSavedCrops([]);
+    setCrop(undefined);
+    setCompletedCrop(undefined);
+  };
+
+  // Find Items "Reset" should only clear the crop selections, keeping the
+  // uploaded image in place so the user can crop it again without re-uploading.
+  const resetCrops = () => {
     setSavedCrops([]);
     setCrop(undefined);
     setCompletedCrop(undefined);
@@ -349,7 +395,7 @@ const Upload = () => {
                       </div>
                     </div>
                     <div className="flex flex-wrap items-center gap-3">
-                      <button onClick={resetAll} className="text-[11px] uppercase tracking-[2px] text-gray-400 border border-[#e5e0d8] px-5 py-2.5 cursor-pointer hover:border-[#1a1a1a] hover:text-[#1a1a1a] transition-colors">Reset</button>
+                      <button onClick={resetCrops} className="text-[11px] uppercase tracking-[2px] text-gray-400 border border-[#e5e0d8] px-5 py-2.5 cursor-pointer hover:border-[#1a1a1a] hover:text-[#1a1a1a] transition-colors">Reset</button>
                       <button onClick={addCropToList} disabled={!completedCrop || isLoading} className="px-5 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] cursor-pointer disabled:opacity-40">+ Add</button>
                       <button onClick={handleItemSearch} disabled={savedCrops.length === 0 || isLoading} className="ml-auto px-10 py-2.5 bg-[#1a1a1a] text-white text-[11px] uppercase tracking-[2px] cursor-pointer disabled:opacity-40 flex items-center gap-2">
                         {isLoading ? loadingButton('Searching...') : `Find My Look (${savedCrops.length})`}
