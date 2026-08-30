@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import ProductCard from '../components/ProductCard'; // <-- Imported the new component
+import ProductCard from '../components/ProductCard'; 
 
 const apiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
@@ -189,19 +189,31 @@ const Results = () => {
       );
     }
 
+    // Checking if the system found alternatives
+    const isAlternative = products.some(p => p.isAlternativeMatch);
+
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-start">
-        {products.map((product, pIndex) => (
-          <ProductCard
-            key={product._id || pIndex}
-            product={product}
-            isSaved={savedIds.has(product._id)}
-            onSave={handleSave}
-            onClick={handleProductClick}
-            onFeedback={handleFeedback}
-            showFeedback={true}
-          />
-        ))}
+      <div className="flex flex-col gap-4">
+        {isAlternative && (
+          <div className="bg-[#fdf8f5] border border-[#e5e0d8] p-4 text-center rounded-sm mb-4">
+            <p className="text-sm text-[#8B1A2B]">
+             We didn't find an exact match for the item you were looking for, but here are some similar alternatives you might like 🤍
+            </p>
+          </div>
+        )}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 items-start">
+          {products.map((product, pIndex) => (
+            <ProductCard
+              key={product._id || pIndex}
+              product={product}
+              isSaved={savedIds.has(product._id)}
+              onSave={handleSave}
+              onClick={handleProductClick}
+              onFeedback={handleFeedback}
+              showFeedback={true}
+            />
+          ))}
+        </div>
       </div>
     );
   };
